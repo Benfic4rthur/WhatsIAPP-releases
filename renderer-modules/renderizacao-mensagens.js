@@ -778,30 +778,52 @@ function criarModuloRenderizacaoMensagens(dependencias = {}) {
     manterFimDepoisDeImagemCarregar(conversaId, conversa, estadoAnterior);
   }
   async function carregarUmaMidia(conversa, msg) {
-    const chave = `${conversa.id}:${msg.idMensagem}`;
+    const conversaId = String(conversa?.id || "").trim();
+    const idMensagem = String(msg?.idMensagem || "").trim();
+    const chave = `${conversaId}:${idMensagem}`;
     if (cargaMidiaEmAndamento.has(chave)) {
       return;
     }
     cargaMidiaEmAndamento.add(chave);
     try {
       const resultado = await ipcRenderer.invoke("carregar-midia", {
-        conversaId: conversa.id,
-        idMensagem: msg.idMensagem,
+        conversaId,
+        idMensagem,
       });
+
+      // A sincronizacao pode substituir a conversa e seus objetos enquanto o
+      // download esta em andamento. Sempre localize a mensagem atual pelo ID
+      // antes de aplicar o resultado, evitando gravar em uma referencia velha.
+      const conversaAtual = conversas[conversaId] || conversa;
+      const mensagemAtual = conversaAtual?.mensagens?.find(
+        (item) => String(item?.idMensagem || "") === idMensagem,
+      );
+      if (!mensagemAtual) {
+        return;
+      }
+
       if (resultado?.ok) {
-        msg.mediaUrl = resultado.mediaUrl;
-        msg.mediaPath = resultado.mediaPath;
-        msg.fileName = resultado.fileName || msg.fileName;
-        msg.erroMidia = null;
+        mensagemAtual.mediaUrl = resultado.mediaUrl || mensagemAtual.mediaUrl;
+        mensagemAtual.mediaPath = resultado.mediaPath || mensagemAtual.mediaPath;
+        mensagemAtual.rawBase64 = resultado.rawBase64 || mensagemAtual.rawBase64 || null;
+        mensagemAtual.mime = resultado.mime || mensagemAtual.mime || null;
+        mensagemAtual.fileName = resultado.fileName || mensagemAtual.fileName;
+        mensagemAtual.erroMidia = null;
       } else {
-        msg.erroMidia = resultado?.erro || "Mídia indisponível";
+        mensagemAtual.erroMidia = resultado?.erro || "Mídia indisponível";
       }
     } catch (erro) {
-      msg.erroMidia = erro?.message || "Mídia indisponível";
+      const conversaAtual = conversas[conversaId] || conversa;
+      const mensagemAtual = conversaAtual?.mensagens?.find(
+        (item) => String(item?.idMensagem || "") === idMensagem,
+      );
+      if (mensagemAtual) {
+        mensagemAtual.erroMidia = erro?.message || "Mídia indisponível";
+      }
     } finally {
       cargaMidiaEmAndamento.delete(chave);
     }
-    if (obterConversaAtual() === conversa.id) {
+    if (obterConversaAtual() === conversaId) {
       renderMensagens();
     }
   }

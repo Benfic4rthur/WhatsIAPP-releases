@@ -1061,7 +1061,9 @@ function limparMensagensRecentesTempoReal() {
   const agora = Date.now();
   const ttl = 10 * 60 * 1000;
 
-  for (const [id, timestamp] of mensagensRecentesTempoReal.entries()) {
+  for (const [id, registro] of mensagensRecentesTempoReal.entries()) {
+    const timestamp =
+      typeof registro === "number" ? registro : Number(registro?.timestamp || 0);
     if (agora - timestamp > ttl) {
       mensagensRecentesTempoReal.delete(id);
     }
@@ -1079,6 +1081,37 @@ function limparMensagensRecentesTempoReal() {
   }
 }
 
+function resumoMensagemTempoReal(dados = {}) {
+  return {
+    mediaPath: String(dados?.mediaPath || "").trim() || null,
+    mediaUrl: String(dados?.mediaUrl || "").trim() || null,
+    rawBase64: String(dados?.rawBase64 || "").trim() || null,
+    mime: String(dados?.mime || "").trim() || null,
+    fileName: String(dados?.fileName || "").trim() || null,
+    texto: String(dados?.texto || ""),
+    statusEntrega: String(dados?.statusEntrega || "").trim() || null,
+    reacoes: Array.isArray(dados?.reacoes)
+      ? JSON.stringify(dados.reacoes)
+      : null,
+  };
+}
+
+function mensagemTempoRealComplementar(registro, dados) {
+  const anterior = registro?.dados || {};
+  const atual = resumoMensagemTempoReal(dados);
+  const campos = [
+    "mediaPath",
+    "mediaUrl",
+    "rawBase64",
+    "mime",
+    "fileName",
+    "statusEntrega",
+    "reacoes",
+  ];
+
+  return campos.some((campo) => atual[campo] && atual[campo] !== anterior[campo]);
+}
+
 function mensagemTempoRealJaEncaminhada(dados) {
   const id = idMensagemTempoReal(dados);
 
@@ -1088,7 +1121,10 @@ function mensagemTempoRealJaEncaminhada(dados) {
 
   limparMensagensRecentesTempoReal();
 
-  return mensagensRecentesTempoReal.has(id);
+  const registro = mensagensRecentesTempoReal.get(id);
+  if (!registro) return false;
+  if (typeof registro === "number") return true;
+  return !mensagemTempoRealComplementar(registro, dados);
 }
 
 function marcarMensagemTempoRealEncaminhada(dados) {
@@ -1098,7 +1134,15 @@ function marcarMensagemTempoRealEncaminhada(dados) {
     return;
   }
 
-  mensagensRecentesTempoReal.set(id, Date.now());
+  const anterior = mensagensRecentesTempoReal.get(id);
+  const resumo = resumoMensagemTempoReal(dados);
+  mensagensRecentesTempoReal.set(id, {
+    timestamp: Date.now(),
+    dados: {
+      ...(typeof anterior === "object" ? anterior.dados : {}),
+      ...resumo,
+    },
+  });
   limparMensagensRecentesTempoReal();
 }
 

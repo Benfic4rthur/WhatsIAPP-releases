@@ -485,21 +485,25 @@ function registrarTestesExpandidos(ctx = {}) {
     const conversas = {
       [conversaId]: { id: conversaId, nome: "Midia", mensagens: [msg] },
     };
+    let conversaAtual = conversaId;
     const mensagens = document.createElement("div");
     let invocacoes = 0;
+    let liberarDownload;
     const modulo = criarModuloRenderizacaoMensagens({
       ipcRenderer: {
-        invoke: async (canal, dados) => {
+        invoke: (canal, dados) => {
           if (canal !== "carregar-midia" || dados?.idMensagem !== msg.idMensagem) {
             return { ok: false };
           }
           invocacoes += 1;
-          return {
-            ok: true,
-            mediaUrl: "file:///tm-fixture.png",
-            mediaPath: "C:/tm-fixture.png",
-            fileName: "tm-fixture.png",
-          };
+          return new Promise((resolve) => {
+            liberarDownload = () => resolve({
+              ok: true,
+              mediaUrl: "file:///tm-fixture.png",
+              mediaPath: "C:/tm-fixture.png",
+              fileName: "tm-fixture.png",
+            });
+          });
         },
       },
       shell: { openExternal: async () => {} },
@@ -508,7 +512,7 @@ function registrarTestesExpandidos(ctx = {}) {
       mensagens,
       conversas,
       cargaMidiaEmAndamento: new Set(),
-      obterConversaAtual: () => conversaId,
+      obterConversaAtual: () => conversaAtual,
       proximaOcorrenciaLinkOuTelefone: () => null,
       criarLinkTelefoneMensagem: (valor) => document.createTextNode(String(valor || "")),
       criarConteudoMidia: () => document.createElement("div"),
@@ -521,17 +525,26 @@ function registrarTestesExpandidos(ctx = {}) {
     });
 
     const antes = JSON.stringify({ id: msg.idMensagem, tipo: msg.tipo, timestamp: msg.timestamp });
-    await modulo.carregarUmaMidia(conversas[conversaId], msg);
+    const carregamento = modulo.carregarUmaMidia(conversas[conversaId], msg);
+    await Promise.resolve();
+    conversas[conversaId] = {
+      ...conversas[conversaId],
+      mensagens: [{ ...msg }],
+    };
+    conversaAtual = null;
+    liberarDownload();
+    await carregamento;
+    const mensagemAtual = conversas[conversaId].mensagens[0];
     const depois = JSON.stringify({ id: msg.idMensagem, tipo: msg.tipo, timestamp: msg.timestamp });
 
-    return invocacoes === 1 && !!msg.mediaUrl && antes === depois
-      ? pass("Midia historica foi materializada sem alterar identidade, tipo ou timestamp da mensagem.", {
+    return invocacoes === 1 && !!mensagemAtual.mediaUrl && antes === depois
+      ? pass("Midia historica foi materializada na mensagem substituida, sem alterar sua identidade.", {
           invocacoes,
-          mediaUrl: !!msg.mediaUrl,
+          mediaUrl: !!mensagemAtual.mediaUrl,
         })
-      : fail("Carregamento sintetico de midia historica alterou estado indevido ou nao materializou a midia.", {
+      : fail("Carregamento sintetico nao reconciliou a midia com a mensagem atual.", {
           invocacoes,
-          mediaUrl: msg.mediaUrl,
+          mediaUrl: mensagemAtual.mediaUrl,
           antes,
           depois,
         });
