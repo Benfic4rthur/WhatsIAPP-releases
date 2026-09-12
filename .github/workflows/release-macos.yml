@@ -32,7 +32,19 @@ jobs:
       - name: Prepare packaged Chrome
         run: npm run prepare:chrome
 
-      - name: Build and publish macOS release
-        run: npx electron-builder --mac --publish always
+      - name: Build macOS release files
+        run: npx electron-builder --mac --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            dist/*.dmg
+            dist/*.zip
+            dist/*.blockmap
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
