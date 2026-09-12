@@ -1,9 +1,27 @@
 function confirmarAutenticacaoWpp(origem) {
+  const origemNormalizada = String(origem || "").toLowerCase();
+  const confirmacaoQR =
+    origemNormalizada === "qrreadsuccess" ||
+    origemNormalizada === "islogged";
+
+  // CONNECTED pode chegar antes do status que confirma a leitura do QR.
+  // Enquanto houver um QR aguardando leitura, não escondemos o QR.
+  if (qrAguardandoLeitura && !confirmacaoQR) {
+    console.log(
+      `WPPConnect: estado ${origem} ignorado enquanto o QR aguarda leitura.`,
+    );
+    return;
+  }
+
   if (qrAceito) return;
   qrAguardandoLeitura = false;
   qrAceito = true;
   enviarEtapaSincronizacao("wpp-autenticado", origem);
-  enviar("wpp-ready", { conectado: true, sincronizando: true });
+  enviar("wpp-ready", {
+    conectado: true,
+    sincronizando: true,
+    qrConfirmado: confirmacaoQR,
+  });
 }
 
 function limparBloqueioPerfilWppStale() {

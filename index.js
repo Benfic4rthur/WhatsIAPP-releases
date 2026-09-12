@@ -1670,7 +1670,11 @@ function registrarWorker(worker, tipoWorker) {
       if (tipoWorker === "wpp" && mensagem.evento === "wpp-ready") {
         registrarMarcoInicializacao("wpp", "wpp-ready");
 
-        atualizarQrConexao("wpp", null);
+        // Só limpe o QR quando o WPP confirmar a leitura. Estados como
+        // syncing/inchat podem chegar antes e não representam autenticação.
+        if (mensagem.dados?.qrConfirmado === true) {
+          atualizarQrConexao("wpp", null);
+        }
 
         if (!wppFullReady) {
           enviarParaTela("status", {
