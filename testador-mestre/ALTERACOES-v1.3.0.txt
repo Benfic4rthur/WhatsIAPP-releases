@@ -1,0 +1,40 @@
+TESTADOR MESTRE WHATSIAPP
+Versao: 1.3.0-cobertura-expandida
+
+ESCOPO
+- Alteracoes restritas a pasta testador-mestre.
+- index.js principal nao foi alterado.
+- renderer.js principal nao foi alterado.
+- Nenhum modulo funcional do WhatsIAPP foi alterado.
+
+COBERTURA
+- Matriz total: 186 casos.
+- Testes executaveis: 118.
+- Perfil Rapido: 52.
+- Perfil Seguro: 114.
+- Perfil Real: 118.
+- Os casos restantes sao SEMI/MANUAL que exigem interacao real, evento externo ou acao destrutiva e continuam catalogados sem automacao forcada.
+
+PRINCIPAIS ALTERACOES
+- TM-C004 mantem a correcao de correlacao sem confundir pendencias globais.
+- TM-B008 agora valida o WPPConnect FULL_READY real.
+- TM-B012 agora valida o fechamento do overlay pelo READY rapido, sem esperar WPP FULL_READY.
+- Implementados os 25 casos AUTO que estavam planejados e sem executor.
+- Adicionados 8 testes P de contratos criticos de regressao.
+- Adicionado teste real de Status em video com fixture propria.
+- O ciclo real de Status agora cria texto, imagem e video e remove somente os tres itens criados pela propria execucao.
+
+ARQUIVOS NOVOS
+- testes-expandidos.js
+- assets/status-teste.mp4
+
+ARQUIVOS AJUSTADOS
+- bridge-renderer.js
+- catalogo-testes.js
+- index.js da pasta testador-mestre
+- matriz-v1.js
+
+VALIDACAO ANTES DA ENTREGA
+- node --check em todos os .js da pasta testador-mestre: OK.
+- IDs duplicados na matriz: 0.
+- Comparacao fora de testador-mestre: nenhuma alteracao.

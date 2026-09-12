@@ -1,0 +1,453 @@
+* {
+    box-sizing: border-box;
+}
+
+:root {
+    --fundo: #0b0f12;
+    --painel: #11171b;
+    --painel2: #182126;
+    --painel3: #202a2f;
+    --borda: #263238;
+    --texto: #e9edef;
+    --texto2: #8696a0;
+    --verde: #25d366;
+    --verde2: #1fa855;
+    --verdeMensagem: #075e54;
+    --vermelho: #ef5350;
+}
+
+body {
+    margin: 0;
+    height: 100vh;
+    overflow: hidden;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: var(--fundo);
+    color: var(--texto);
+}
+
+.topo {
+    height: 68px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 22px;
+    background: #0e1418;
+    border-bottom: 1px solid var(--borda);
+}
+
+.marca {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    font-size: 21px;
+    font-weight: 700;
+}
+
+.logo {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--verde2);
+    font-size: 21px;
+}
+
+.status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--texto2);
+}
+
+.status .bolinha {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #e5a50a;
+}
+
+.status.conectado {
+    color: var(--verde);
+}
+
+.status.conectado .bolinha {
+    background: var(--verde);
+}
+
+.status.erro {
+    color: var(--vermelho);
+}
+
+.status.erro .bolinha {
+    background: var(--vermelho);
+}
+
+.estrutura {
+    height: calc(100vh - 68px);
+    display: grid;
+    grid-template-columns: 320px minmax(400px, 1fr) 350px;
+    overflow: hidden;
+}
+
+.lateral {
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: var(--painel);
+    border-right: 1px solid var(--borda);
+    padding: 16px 10px 10px 16px;
+}
+
+.busca {
+    flex-shrink: 0;
+    width: 100%;
+    height: 44px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    outline: none;
+    padding: 0 14px;
+    margin-bottom: 12px;
+    background: var(--painel2);
+    color: var(--texto);
+}
+
+.busca:focus {
+    border-color: #3d4b52;
+}
+
+.abas {
+    flex-shrink: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.aba {
+    margin: 0;
+    padding: 9px 8px;
+    border: 1px solid var(--borda);
+    background: var(--painel2);
+    color: var(--texto2);
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.aba.ativa {
+    color: white;
+    border-color: var(--verde2);
+    background: rgba(37, 211, 102, .12);
+}
+
+#listaConversas {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 6px;
+}
+
+#listaConversas::-webkit-scrollbar,
+.mensagens::-webkit-scrollbar,
+.ia::-webkit-scrollbar {
+    width: 8px;
+}
+
+#listaConversas::-webkit-scrollbar-track,
+.mensagens::-webkit-scrollbar-track,
+.ia::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#listaConversas::-webkit-scrollbar-thumb,
+.mensagens::-webkit-scrollbar-thumb,
+.ia::-webkit-scrollbar-thumb {
+    background: #3b474d;
+    border-radius: 20px;
+}
+
+#listaConversas::-webkit-scrollbar-thumb:hover,
+.mensagens::-webkit-scrollbar-thumb:hover,
+.ia::-webkit-scrollbar-thumb:hover {
+    background: #536168;
+}
+
+.conversa {
+    padding: 14px;
+    margin-bottom: 5px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background .15s;
+}
+
+.conversa:hover,
+.conversa.ativa {
+    background: var(--painel2);
+}
+
+.conversa-nome {
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.conversa-preview {
+    font-size: 13px;
+    color: var(--texto2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.vazio-lista {
+    padding: 24px 10px;
+    text-align: center;
+    color: var(--texto2);
+    font-size: 13px;
+}
+
+.chat {
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    background: #0d1317;
+}
+
+.chat-topo {
+    flex-shrink: 0;
+    min-height: 70px;
+    padding: 0 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--borda);
+}
+
+.chat-nome {
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.chat-status {
+    margin-top: 3px;
+    font-size: 11px;
+    color: var(--texto2);
+}
+
+.modos {
+    display: flex;
+    gap: 5px;
+}
+
+.modo {
+    width: auto;
+    padding: 8px 12px;
+    margin: 0;
+    font-size: 12px;
+    background: var(--painel2);
+    color: var(--texto2);
+    border: 1px solid var(--borda);
+}
+
+.modo.ativo {
+    color: white;
+    border-color: var(--verde2);
+    background: rgba(37, 211, 102, .12);
+}
+
+.mensagens {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 25px;
+}
+
+.vazio {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #62727b;
+}
+
+.mensagem {
+    max-width: 72%;
+    padding: 9px 11px;
+    margin-bottom: 8px;
+    border-radius: 9px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    clear: both;
+}
+
+.mensagem.recebida {
+    width: fit-content;
+    margin-right: auto;
+    background: var(--painel3);
+    border-top-left-radius: 3px;
+}
+
+.mensagem.minha {
+    width: fit-content;
+    margin-left: auto;
+    background: var(--verdeMensagem);
+    border-top-right-radius: 3px;
+}
+
+.mensagem-texto {
+    margin-top: 7px;
+    white-space: pre-wrap;
+}
+
+.hora {
+    display: inline-block;
+    margin-left: 8px;
+    color: rgba(255, 255, 255, .55);
+    font-size: 10px;
+    vertical-align: bottom;
+}
+
+.midia-placeholder {
+    min-width: 160px;
+    padding: 10px 12px;
+    color: var(--texto2);
+    font-size: 12px;
+    text-align: center;
+}
+
+.midia-imagem {
+    display: block;
+    width: min(420px, 100%);
+    max-height: 480px;
+    object-fit: contain;
+    border-radius: 8px;
+    cursor: pointer;
+    background: #0a0e11;
+}
+
+.midia-sticker {
+    display: block;
+    width: 180px;
+    max-width: 100%;
+    max-height: 180px;
+    object-fit: contain;
+}
+
+.midia-video {
+    display: block;
+    width: min(460px, 100%);
+    max-height: 420px;
+    border-radius: 8px;
+    background: #000;
+}
+
+.midia-audio {
+    display: block;
+    width: 320px;
+    max-width: 100%;
+    height: 42px;
+}
+
+.midia-documento {
+    display: block;
+    width: min(360px, 100%);
+    margin: 0 0 3px;
+    padding: 12px 14px;
+    text-align: left;
+    background: rgba(255, 255, 255, .08);
+    color: var(--texto);
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 8px;
+}
+
+.midia-documento:hover {
+    background: rgba(255, 255, 255, .12);
+}
+
+.ia {
+    min-height: 0;
+    padding: 19px;
+    background: var(--painel);
+    border-left: 1px solid var(--borda);
+    overflow-y: auto;
+}
+
+.ia h2 {
+    margin: 4px 0 18px;
+    font-size: 19px;
+}
+
+.resposta {
+    min-height: 190px;
+    padding: 17px;
+    border-radius: 12px;
+    background: var(--painel2);
+    color: var(--texto2);
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+button {
+    width: 100%;
+    padding: 13px;
+    border-radius: 9px;
+    border: none;
+    margin-top: 10px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.editar {
+    background: var(--painel2);
+    color: var(--texto);
+    border: 1px solid var(--borda);
+}
+
+.enviar {
+    background: var(--verde2);
+    color: white;
+}
+
+.ignorar {
+    background: transparent;
+    color: #f06a68;
+    border: 1px solid #9c3434;
+}
+
+.qr-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, .88);
+}
+
+.qr-box {
+    width: 350px;
+    padding: 25px;
+    text-align: center;
+    color: #111;
+    background: white;
+    border-radius: 15px;
+}
+
+.qr-box img {
+    width: 280px;
+    max-width: 100%;
+}
+
+.qr-box h3 {
+    margin-top: 8px;
+}
+
+.qr-box p {
+    color: #555;
+}
+

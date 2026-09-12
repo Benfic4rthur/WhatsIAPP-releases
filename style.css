@@ -1,0 +1,16 @@
+@import url("./styles/01-base.css");
+@import url("./styles/02-interacoes-mensagens.css");
+@import url("./styles/03-sincronizacao-inicial.css");
+@import url("./styles/04-favoritos-busca.css");
+@import url("./styles/05-ia-controles.css");
+@import url("./styles/06-admin.css");
+@import url("./styles/07-configuracoes-app-ia.css");
+@import url("./styles/08-catalogo-configuracoes.css");
+@import url("./styles/09-admin-testes-billing.css");
+@import url("./styles/10-whatsapp-layout.css");
+@import url("./styles/11-compositor.css");
+@import url("./styles/12-personalizacao-conversa.css");
+@import url("./styles/13-perfil-contato.css");
+@import url("./styles/14-mensagens-menus.css");
+@import url("./styles/15-transcricao-audio.css");
+@import url("./styles/16-status.css");

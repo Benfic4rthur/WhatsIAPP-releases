@@ -1,0 +1,317 @@
+/* =========================================================
+   AJUSTE DE ALINHAMENTO DAS MENSAGENS
+   Mantem o perfil lateral sem afastar as bolhas das bordas.
+   ========================================================= */
+.mensagens {
+    padding-left: 24px !important;
+    padding-right: 24px !important;
+}
+
+/* Perfil de grupo: participantes */
+.perfil-grupo-participantes-secao {
+    overflow: hidden;
+}
+
+.perfil-grupo-participantes-lista {
+    display: flex;
+    flex-direction: column;
+    max-height: 360px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+
+.perfil-grupo-participante-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 58px;
+    padding: 8px 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.045);
+}
+
+.perfil-grupo-participante-item:first-child {
+    border-top: 0;
+}
+
+.perfil-grupo-participante-avatar {
+    flex: 0 0 auto;
+}
+
+.perfil-grupo-participante-info {
+    min-width: 0;
+    flex: 1;
+}
+
+.perfil-grupo-participante-linha-nome {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.perfil-grupo-participante-nome {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #e9edef;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.perfil-grupo-participante-admin {
+    flex: 0 0 auto;
+    padding: 2px 6px;
+    border: 1px solid rgba(0, 168, 132, 0.42);
+    border-radius: 999px;
+    color: #53bdeb;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.perfil-grupo-participante-numero {
+    margin-top: 3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #8696a0;
+    font-size: 12px;
+}
+
+/* Confirmacao isolada do modulo de privacidade */
+.privacidade-confirmacao-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100005;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.62);
+}
+
+.privacidade-confirmacao-card {
+    width: min(390px, 100%);
+    padding: 22px;
+    border: 1px solid #2a3942;
+    border-radius: 14px;
+    background: #111b21;
+    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.5);
+}
+
+.privacidade-confirmacao-titulo {
+    color: #e9edef;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.privacidade-confirmacao-texto {
+    margin-top: 10px;
+    color: #aebac1;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.privacidade-confirmacao-acoes {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 22px;
+}
+
+.privacidade-confirmacao-botao {
+    min-width: 100px;
+    padding: 10px 14px;
+    border-radius: 9px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.privacidade-confirmacao-botao.secundario {
+    border: 1px solid #34434c;
+    background: transparent;
+    color: #d1d7db;
+}
+
+.privacidade-confirmacao-botao.perigo {
+    border: 1px solid rgba(255, 104, 104, 0.35);
+    background: rgba(255, 83, 83, 0.12);
+    color: #ff8f8f;
+}
+
+.privacidade-confirmacao-botao:hover {
+    filter: brightness(1.08);
+}
+
+
+/* =========================================================
+   Menu contextual da lista - visual inspirado no WhatsApp Web
+   ========================================================= */
+.menu-contexto-whatsapp {
+    position: fixed;
+    z-index: 100000;
+    min-width: 224px;
+    max-width: min(280px, calc(100vw - 16px));
+    padding: 7px 0;
+    border: 1px solid rgba(134, 150, 160, 0.14);
+    border-radius: 12px;
+    background: #111b21;
+    box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.32),
+        0 2px 8px rgba(0, 0, 0, 0.22);
+    color: #e9edef;
+    opacity: 0;
+    transform: translateY(-4px) scale(0.985);
+    transform-origin: top left;
+    pointer-events: none;
+    transition:
+        opacity 90ms ease,
+        transform 90ms ease;
+    overflow: hidden;
+}
+
+.menu-contexto-whatsapp.aberto {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+}
+
+.menu-contexto-whatsapp-item {
+    width: 100%;
+    min-height: 42px;
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr);
+    align-items: center;
+    gap: 11px;
+    padding: 9px 15px;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: #e9edef;
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+    font-size: 13.5px;
+    font-weight: 500;
+    line-height: 1.25;
+}
+
+.menu-contexto-whatsapp-item:hover,
+.menu-contexto-whatsapp-item:focus-visible {
+    background: #202c33;
+    outline: none;
+}
+
+.menu-contexto-whatsapp-item:active {
+    background: #26353d;
+}
+
+.menu-contexto-whatsapp-icone {
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #aebac1;
+}
+
+.menu-contexto-whatsapp-icone svg {
+    width: 19px;
+    height: 19px;
+    display: block;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.menu-contexto-whatsapp-texto {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.menu-contexto-whatsapp-separador {
+    height: 1px;
+    margin: 5px 0;
+    background: rgba(134, 150, 160, 0.16);
+}
+
+.menu-contexto-whatsapp-item.perigo:hover,
+.menu-contexto-whatsapp-item.perigo:focus-visible {
+    color: #ffb4b8;
+}
+
+.menu-contexto-whatsapp-item.perigo:hover .menu-contexto-whatsapp-icone,
+.menu-contexto-whatsapp-item.perigo:focus-visible .menu-contexto-whatsapp-icone {
+    color: #ff9fa5;
+}
+
+
+
+/* Autor das mensagens recebidas em grupos */
+.mensagem-autor-grupo {
+    max-width: 100%;
+    margin: 0 0 3px;
+    overflow: hidden;
+    color: #53bdeb;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* =========================================================
+   Menu contextual de mensagens - visual WhatsApp Web
+   ========================================================= */
+.menu-contexto-mensagem-whatsapp {
+    min-width: 202px;
+    width: max-content;
+    max-width: min(260px, calc(100vw - 16px));
+    padding: 6px 0;
+    border-radius: 10px;
+    background: #111b21;
+}
+
+.menu-contexto-mensagem-whatsapp .menu-contexto-whatsapp-item {
+    min-height: 40px;
+    grid-template-columns: 22px minmax(0, 1fr);
+    gap: 10px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.menu-contexto-mensagem-whatsapp .menu-contexto-whatsapp-icone {
+    width: 19px;
+    height: 19px;
+    color: #aebac1;
+}
+
+.menu-contexto-mensagem-whatsapp .menu-contexto-whatsapp-icone svg {
+    width: 18px;
+    height: 18px;
+}
+
+.menu-contexto-mensagem-whatsapp .menu-contexto-whatsapp-separador {
+    margin: 5px 0;
+}
+
+.menu-contexto-mensagem-whatsapp
+    .menu-contexto-whatsapp-item.perigo {
+    color: #e9edef;
+}
+
+.menu-contexto-mensagem-whatsapp
+    .menu-contexto-whatsapp-item.perigo:hover,
+.menu-contexto-mensagem-whatsapp
+    .menu-contexto-whatsapp-item.perigo:focus-visible {
+    color: #ff9fa5;
+}
+

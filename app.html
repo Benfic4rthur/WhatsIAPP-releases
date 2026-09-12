@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>WhatsIAPP</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <header class="topo">
+
+        <div class="marca">
+            <img class="logo" src="assets/logo.png" alt="WhatsIAPP"
+                style="width:34px;height:34px;object-fit:cover;border-radius:9px;display:block;">
+            <span>WhatsIAPP</span>
+        </div>
+
+        <div id="status" class="status">
+            <div class="bolinha"></div>
+            <span>Conectando...</span>
+        </div>
+
+    </header>
+
+    <div class="estrutura">
+
+        <aside class="lateral">
+
+            <nav class="wa-nav-rail" aria-label="Navegação principal">
+                <div class="wa-nav-rail-topo">
+                    <button id="btnRailConversas" class="wa-rail-btn ativa" type="button" title="Conversas"
+                        aria-label="Conversas">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path
+                                d="M5 5.5A3.5 3.5 0 0 1 8.5 2h7A3.5 3.5 0 0 1 19 5.5v7A3.5 3.5 0 0 1 15.5 16H10l-5 4v-4.9A3.5 3.5 0 0 1 2 11.5v-6Z">
+                            </path>
+                            <path d="M7.5 8.25h9M7.5 11.5h6"></path>
+                        </svg>
+                    </button>
+
+                    <button id="btnRailArquivadas" class="wa-rail-btn" type="button" title="Arquivadas"
+                        aria-label="Arquivadas">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M4 7h16v13H4z"></path>
+                            <path d="M3 4h18v3H3zM9 11h6"></path>
+                        </svg>
+                    </button>
+
+                    <button id="btnRailFavoritos" class="wa-rail-btn" type="button" title="Favoritas"
+                        aria-label="Favoritas">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path
+                                d="m12 3 2.75 5.57 6.15.9-4.45 4.33 1.05 6.12L12 17.03l-5.5 2.89 1.05-6.12L3.1 9.47l6.15-.9L12 3Z">
+                            </path>
+                        </svg>
+                    </button>
+
+                    <button id="btnRailTrancadas" class="wa-rail-btn" type="button" title="Trancadas"
+                        aria-label="Trancadas" hidden>
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <rect x="5" y="10" width="14" height="10" rx="2"></rect>
+                            <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+                        </svg>
+                        <span id="contadorTrancadas" class="wa-rail-contador"></span>
+                    </button>
+                </div>
+
+                <div class="wa-nav-rail-rodape">
+                    <div id="perfilRailArea" class="perfil-rail-area"></div>
+                    <button id="btnRailConfig" class="wa-rail-btn" type="button" title="Configurações"
+                        aria-label="Configurações" hidden>
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path
+                                d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.12 2.12-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V20h-3v-.08A1.7 1.7 0 0 0 10.68 18.36a1.7 1.7 0 0 0-1.88.34l-.06.06-2.12-2.12.06-.06A1.7 1.7 0 0 0 7.02 15a1.7 1.7 0 0 0-1.56-1.03H5v-3h.46A1.7 1.7 0 0 0 7.02 9.94a1.7 1.7 0 0 0-.34-1.88L6.62 8l2.12-2.12.06.06a1.7 1.7 0 0 0 1.88.34A1.7 1.7 0 0 0 11.71 4.7V4h3v.7a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06L19.8 8l-.06.06a1.7 1.7 0 0 0-.34 1.88 1.7 1.7 0 0 0 1.56 1.03H21v3h-.04A1.7 1.7 0 0 0 19.4 15Z">
+                            </path>
+                        </svg>
+                    </button>
+                </div>
+            </nav>
+
+            <div class="lateral-corpo">
+                <div class="lateral-cabecalho">
+                    <div class="lateral-marca" aria-label="WhatsIAPP">
+                        <img class="lateral-marca-logo" src="assets/logo.png" alt="WhatsIAPP">
+                        <div class="lateral-marca-texto">WhatsIAPP</div>
+                    </div>
+
+                    <div id="lateralTitulo" class="lateral-titulo" hidden>Conversas</div>
+
+                    <div class="lateral-acoes-topo">
+                        <button id="btnNovaConversa" class="icone-topo nova-conversa-atalho" type="button"
+                            title="Nova conversa" aria-label="Nova conversa">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M12 5v14M5 12h14"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="busca-wrap">
+                    <svg class="busca-icone" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="11" cy="11" r="6.5"></circle>
+                        <path d="m16 16 4 4"></path>
+                    </svg>
+                    <input id="busca" class="busca" type="text" placeholder="Pesquisar conversas e mensagens">
+                </div>
+
+                <div id="abasFiltros" class="abas">
+                    <button id="abaConversas" class="aba ativa" data-aba="conversas">Tudo</button>
+                    <button id="abaNaoLidas" class="aba" data-aba="nao-lidas">Não lidas <span id="contadorNaoLidas"
+                            class="aba-contador-nao-lidas"></span></button>
+                    <button id="abaFavoritos" class="aba" data-aba="favoritos">
+                        Favoritas <span id="contadorFavoritos"></span>
+                    </button>
+                    <button id="abaGrupos" class="aba" data-aba="grupos">Grupos</button>
+                </div>
+
+                <button id="abaArquivadas" class="aba-interna" data-aba="arquivadas" type="button" hidden>
+                    Arquivadas <span id="contadorArquivadas"></span>
+                </button>
+
+                <div id="listaConversas"></div>
+
+                <section id="painelNovaConversa" class="nova-conversa-painel" hidden>
+                    <div class="nova-conversa-topo">
+                        <button id="btnVoltarNovaConversa" class="nova-conversa-voltar" type="button"
+                            aria-label="Voltar" title="Voltar">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="m15 18-6-6 6-6"></path>
+                            </svg>
+                        </button>
+                        <div class="nova-conversa-titulo">Nova conversa</div>
+                    </div>
+
+                    <div class="nova-conversa-busca-wrap">
+                        <svg class="busca-icone" viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="11" cy="11" r="6.5"></circle>
+                            <path d="m16 16 4 4"></path>
+                        </svg>
+                        <input id="buscaNovaConversa" class="nova-conversa-busca" type="text"
+                            placeholder="Pesquisar contato salvo">
+                    </div>
+
+                    <div class="nova-conversa-secao">Contatos salvos</div>
+                    <div id="listaNovaConversa" class="nova-conversa-lista"></div>
+                </section>
+            </div>
+
+        </aside>
+
+        <main class="chat">
+
+            <div class="chat-topo">
+
+                <div>
+                    <div id="nomeChat" class="chat-nome">
+                        Selecione uma conversa
+                    </div>
+
+                    <div id="statusChat" class="chat-status"></div>
+                </div>
+
+                <div class="modos">
+
+                    <button class="modo ativo" data-modo="manual">
+                        Manual
+                    </button>
+
+                    <button class="modo" data-modo="assistido">
+                        Assistido
+                    </button>
+
+                    <button class="modo" data-modo="automatico">
+                        Automático
+                    </button>
+
+                </div>
+
+            </div>
+
+            <div id="mensagens" class="mensagens">
+                <div class="vazio vazio-chat-home">
+                    <div class="vazio-chat-card">
+                        <div class="vazio-chat-badge">✨ EM DESENVOLVIMENTO</div>
+                        <div class="vazio-chat-titulo">O WhatsIAPP vai ficar ainda mais inteligente</div>
+                        <div class="vazio-chat-texto">Alguns dos recursos que já estão no nosso radar para as próximas
+                            versões:</div>
+                        <div class="vazio-chat-recursos">
+                            <div class="vazio-chat-recurso">
+                                <div class="vazio-chat-recurso-icone">🚚</div>
+                                <div class="vazio-chat-recurso-conteudo">
+                                    <strong>Integração com plataformas de entregas</strong>
+                                    <span>Conecte serviços de entrega para agilizar o despacho e o acompanhamento dos
+                                        seus
+                                        pedidos.</span>
+                                </div>
+                                <small>Em breve</small>
+                            </div>
+                            <div class="vazio-chat-recurso">
+                                <div class="vazio-chat-recurso-icone">📦</div>
+                                <div class="vazio-chat-recurso-conteudo">
+                                    <strong>Integração com o seu ERP</strong>
+                                    <span>Conecte a API do seu ERP ao WhatsIAPP para consultar e manter o controle de
+                                        estoque integrado.</span>
+                                </div>
+                                <small>Em breve</small>
+                            </div>
+                            <div class="vazio-chat-recurso">
+                                <div class="vazio-chat-recurso-icone">💳</div>
+                                <div class="vazio-chat-recurso-conteudo">
+                                    <strong>Pagamentos e PIX automático</strong>
+                                    <span>Integração com meios de pagamento, incluindo geração automática do QR Code PIX
+                                        em cada venda autônoma.</span>
+                                </div>
+                                <small>Em breve</small>
+                            </div>
+                        </div>
+                        <div class="vazio-chat-dica">💬 Selecione uma conversa para começar</div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <aside class="ia">
+
+            <h2>
+                ✦ Assistente WhatsIAPP
+            </h2>
+
+            <div id="respostaIA" class="resposta">
+                Selecione uma conversa para gerar uma resposta.
+            </div>
+
+            <button id="btnEditar" class="editar">
+                Editar
+            </button>
+
+            <button id="btnEnviar" class="enviar">
+                Enviar
+            </button>
+
+            <button id="btnIgnorar" class="ignorar">
+                Ignorar
+            </button>
+
+        </aside>
+
+    </div>
+
+    <div id="qrOverlay" class="qr-overlay">
+
+        <div class="qr-box">
+
+            <img id="qrImagem" alt="QR Code">
+
+            <h3>
+                Conectar WhatsApp
+            </h3>
+
+            <p>
+                Abra o WhatsApp no celular, vá em Aparelhos conectados e escaneie o QR Code.
+            </p>
+
+        </div>
+
+    </div>
+
+    <script src="renderer.js"></script>
+    <script src="renderer-modules/status-ui.js"></script>
+
+</body>
+
+</html>

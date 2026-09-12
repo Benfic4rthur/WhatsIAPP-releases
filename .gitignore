@@ -1,0 +1,27 @@
+# Dependências e artefatos gerados
+node_modules/
+dist/
+build/wppconnect-chrome/
+
+# Sessões e dados locais do WhatsApp — nunca publicar
+tokens/
+.wwebjs_auth/
+.wwebjs_cache/
+*.session
+*.session-journal
+
+# Segredos e configurações locais
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Logs, caches e arquivos temporários
+*.log
+logs/
+cache/
+tmp/
+.DS_Store

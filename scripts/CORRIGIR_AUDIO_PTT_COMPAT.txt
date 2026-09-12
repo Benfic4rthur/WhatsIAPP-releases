@@ -1,0 +1,230 @@
+const fs = require("fs");
+const path = require("path");
+
+const raiz = process.cwd();
+const arquivoAudio = path.join(raiz, "renderer-modules", "audio.js");
+const arquivoWorker = path.join(raiz, "whatsapp-worker.js");
+
+function falhar(msg) {
+  console.error("[PATCH AUDIO] ERRO:", msg);
+  process.exit(1);
+}
+
+function backup(arquivo) {
+  const destino = `${arquivo}.backup-audio-compat`;
+  fs.copyFileSync(arquivo, destino);
+  console.log("[PATCH AUDIO] Backup:", destino);
+}
+
+if (!fs.existsSync(arquivoAudio)) {
+  falhar("renderer-modules/audio.js nao encontrado. Execute na raiz do projeto.");
+}
+
+if (!fs.existsSync(arquivoWorker)) {
+  falhar("whatsapp-worker.js nao encontrado. Execute na raiz do projeto.");
+}
+
+let audio = fs.readFileSync(arquivoAudio, "utf8");
+let worker = fs.readFileSync(arquivoWorker, "utf8");
+
+backup(arquivoAudio);
+backup(arquivoWorker);
+
+// 1) Renderer: volta a enviar os bytes ORIGINAIS produzidos pelo MediaRecorder.
+// A conversao OGG pode continuar existindo para preview/transcricao, mas nao participa
+// mais do payload de envio do PTT.
+const inicioTrechoAudio = audio.indexOf("      let convertido = convertidoPronto;");
+const fimTrechoAudio = audio.indexOf("      if (!envioAudioAutorizado) {", inicioTrechoAudio);
+
+if (inicioTrechoAudio < 0 || fimTrechoAudio < 0) {
+  falhar("Nao encontrei o bloco de conversao dentro de enviarAudioPendente().");
+}
+
+const novoTrechoAudio =
+`      // Compatibilidade restaurada: o envio usa exatamente o Blob original
+      // gerado pelo MediaRecorder, como nas versoes em que o PTT funcionava
+      // no WhatsIAPP, WhatsApp Web e celular.
+      const arrayBufferEnvio = await blobDestino.arrayBuffer();
+      const bytesEnvio = Array.from(new Uint8Array(arrayBufferEnvio));
+      const mimeEnvio = blobDestino.type || "audio/webm";
+
+`;
+
+audio =
+  audio.slice(0, inicioTrechoAudio) +
+  novoTrechoAudio +
+  audio.slice(fimTrechoAudio);
+
+// 2) Worker Baileys: volta ao caminho simples e comprovado.
+// Nada de URL temporaria, reconversao ou MIME forcado para OGG.
+const assinatura = "async function enviarAudioGravado(conversaId, bytes, mime) {";
+const inicioFunc = worker.indexOf(assinatura);
+
+if (inicioFunc < 0) {
+  falhar("Funcao enviarAudioGravado() nao encontrada no whatsapp-worker.js.");
+}
+
+function acharFimFuncao(texto, inicio) {
+  const abre = texto.indexOf("{", inicio);
+  if (abre < 0) return -1;
+
+  let nivel = 0;
+  let emString = null;
+  let escape = false;
+  let emLinha = false;
+  let emBloco = false;
+
+  for (let i = abre; i < texto.length; i++) {
+    const c = texto[i];
+    const n = texto[i + 1];
+
+    if (emLinha) {
+      if (c === "\n") emLinha = false;
+      continue;
+    }
+
+    if (emBloco) {
+      if (c === "*" && n === "/") {
+        emBloco = false;
+        i++;
+      }
+      continue;
+    }
+
+    if (emString) {
+      if (escape) {
+        escape = false;
+        continue;
+      }
+      if (c === "\\") {
+        escape = true;
+        continue;
+      }
+      if (c === emString) emString = null;
+      continue;
+    }
+
+    if (c === "/" && n === "/") {
+      emLinha = true;
+      i++;
+      continue;
+    }
+
+    if (c === "/" && n === "*") {
+      emBloco = true;
+      i++;
+      continue;
+    }
+
+    if (c === '"' || c === "'" || c === "`") {
+      emString = c;
+      continue;
+    }
+
+    if (c === "{") nivel++;
+    if (c === "}") {
+      nivel--;
+      if (nivel === 0) return i + 1;
+    }
+  }
+
+  return -1;
+}
+
+const fimFunc = acharFimFuncao(worker, inicioFunc);
+
+if (fimFunc < 0) {
+  falhar("Nao consegui determinar o fim de enviarAudioGravado().");
+}
+
+const novaFuncao = `async function enviarAudioGravado(conversaId, bytes, mime) {
+  if (!sock) {
+    throw new Error("WhatsApp ainda nao esta conectado.");
+  }
+
+  const jidOrigem = normalizarJid(conversaId);
+
+  if (!jidOrigem) {
+    throw new Error("Conversa invalida.");
+  }
+
+  const jidDestino = await resolverJidParaEnvio(jidOrigem);
+
+  if (!jidDestino) {
+    throw new Error("Nao consegui localizar o destinatario.");
+  }
+
+  const buffer = Buffer.from(bytes || []);
+
+  if (!buffer.length) {
+    throw new Error("A gravacao de audio esta vazia.");
+  }
+
+  const mimeFinal = String(mime || "audio/webm");
+
+  consoleLogOriginal(
+    \`[AUDIO PTT COMPAT] inicio | jid=\${jidDestino} | mime=\${mimeFinal} | bytes=\${buffer.length}.\`,
+  );
+
+  const enviada = await comTimeout(
+    sock.sendMessage(jidDestino, {
+      audio: buffer,
+      mimetype: mimeFinal,
+      ptt: true,
+    }),
+    90000,
+    "O WhatsApp demorou demais para enviar o audio.",
+  );
+
+  if (!enviada?.key?.id) {
+    throw new Error("O WhatsApp nao confirmou o envio do audio.");
+  }
+
+  registrarMensagemParaRetry(enviada);
+
+  garantirPasta(pastaMedia());
+
+  const extensao = mimeFinal.toLowerCase().includes("ogg") ? ".ogg" : ".webm";
+
+  const mediaPath = path.join(
+    pastaMedia(),
+    \`\${sanitizarNomeArquivo(enviada.key.id)}_voz\${extensao}\`,
+  );
+
+  fs.writeFileSync(mediaPath, buffer);
+
+  await adicionarMensagem(enviada, true, {
+    mediaPath,
+    mediaUrl: pathToFileURL(mediaPath).href,
+    statusEntrega: "enviada",
+  });
+
+  salvarConversas();
+  enviarConversas();
+
+  consoleLogOriginal(
+    \`[AUDIO PTT COMPAT] enviado | id=\${enviada.key.id} | jid=\${jidDestino}.\`,
+  );
+
+  return {
+    idMensagem: enviada.key.id,
+    conversaId: jidDestino,
+    via: "baileys-compat",
+  };
+}`;
+
+worker =
+  worker.slice(0, inicioFunc) +
+  novaFuncao +
+  worker.slice(fimFunc);
+
+fs.writeFileSync(arquivoAudio, audio, "utf8");
+fs.writeFileSync(arquivoWorker, worker, "utf8");
+
+console.log("");
+console.log("[PATCH AUDIO] OK");
+console.log("[PATCH AUDIO] renderer-modules/audio.js restaurado para Blob original.");
+console.log("[PATCH AUDIO] whatsapp-worker.js restaurado para envio Baileys direto.");
+console.log("[PATCH AUDIO] Nenhum outro modulo foi alterado.");
+console.log("");
+console.log("Reinicie o WhatsIAPP e envie UM audio novo para testar.");

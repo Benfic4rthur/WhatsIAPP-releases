@@ -1,0 +1,5 @@
+TESTADOR MESTRE v1.3.2
+- TM-J014 agora retorna SKIP enquanto Status em video estiver suspenso.
+- O ciclo real nao tenta mais publicar video.
+- TM-J016 volta a limpar somente Status de texto e imagem.
+- Nenhum teste mascara falha de video como PASS.

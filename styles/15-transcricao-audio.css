@@ -1,0 +1,248 @@
+/* Transcricao de audio: UI isolada do player e do motor de IA. */
+.midia-audio-bloco {
+    width: 100%;
+    min-width: 0;
+}
+
+.midia-audio-transcricao {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    margin-top: 7px;
+    padding: 9px 10px 8px;
+    border: 1px solid rgba(83, 189, 235, .12);
+    border-radius: 10px;
+    background: linear-gradient(180deg, rgba(9, 18, 23, .52), rgba(9, 18, 23, .34));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .025);
+    color: rgba(233, 237, 239, .88);
+}
+
+.midia-audio-transcricao-cabecalho {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.midia-audio-transcricao-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: rgba(123, 211, 247, .88);
+    font-size: 9px;
+    font-weight: 750;
+    letter-spacing: .075em;
+    text-transform: uppercase;
+}
+
+.midia-audio-transcricao-label::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    flex: 0 0 6px;
+    border-radius: 50%;
+    background: #53bdeb;
+    box-shadow: 0 0 0 3px rgba(83, 189, 235, .10);
+}
+
+.midia-audio-transcricao-texto {
+    position: relative;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+    color: rgba(241, 244, 246, .90);
+    font-size: 11px;
+    line-height: 1.48;
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+.midia-audio-transcricao-texto:not(.expandida)::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 42px;
+    height: 1.48em;
+    pointer-events: none;
+    background: linear-gradient(90deg, rgba(14, 24, 29, 0), rgba(14, 24, 29, .96) 72%);
+}
+
+.midia-audio-transcricao-texto.expandida {
+    display: block;
+    max-height: 220px;
+    overflow-y: auto;
+    padding-right: 5px;
+    white-space: pre-wrap;
+    scrollbar-width: thin;
+}
+
+.midia-audio-transcricao-texto.expandida::-webkit-scrollbar {
+    width: 5px;
+}
+
+.midia-audio-transcricao-texto.expandida::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(134, 150, 160, .32);
+}
+
+.midia-audio-transcricao-alternar,
+.midia-audio-transcricao-acao {
+    appearance: none;
+    border: 0;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background .14s ease, color .14s ease, border-color .14s ease, transform .14s ease;
+}
+
+.midia-audio-transcricao-alternar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 22px;
+    margin-top: 7px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: rgba(83, 189, 235, .08);
+    color: #71c8ed;
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.midia-audio-transcricao-alternar:hover {
+    background: rgba(83, 189, 235, .14);
+    color: #9bdcf7;
+}
+
+.midia-audio-transcricao-acao {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 28px;
+    padding: 5px 10px;
+    border: 1px solid rgba(83, 189, 235, .16);
+    border-radius: 8px;
+    background: rgba(83, 189, 235, .055);
+    color: #71c8ed;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.midia-audio-transcricao-acao::before {
+    content: "✦";
+    margin-right: 6px;
+    color: #53bdeb;
+    font-size: 9px;
+}
+
+.midia-audio-transcricao-acao:hover {
+    border-color: rgba(83, 189, 235, .28);
+    background: rgba(83, 189, 235, .10);
+    color: #a4e1fa;
+}
+
+.midia-audio-transcricao-alternar:active,
+.midia-audio-transcricao-acao:active {
+    transform: translateY(1px);
+}
+
+.midia-audio-transcricao.carregando,
+.midia-audio-transcricao.erro {
+    display: flex;
+    align-items: center;
+    min-height: 32px;
+}
+
+.midia-audio-transcricao.carregando {
+    border-color: rgba(83, 189, 235, .16);
+    background: rgba(83, 189, 235, .045);
+}
+
+.midia-audio-transcricao.erro {
+    border-color: rgba(240, 169, 169, .16);
+    background: rgba(240, 169, 169, .04);
+}
+
+.midia-audio-transcricao.erro .midia-audio-transcricao-acao {
+    border-color: rgba(240, 169, 169, .18);
+    background: rgba(240, 169, 169, .05);
+    color: #f0b4b4;
+}
+
+.midia-audio-transcricao-status {
+    display: inline-flex;
+    align-items: center;
+    color: rgba(225, 235, 240, .72);
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.midia-audio-transcricao-status::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    margin-right: 7px;
+    border-radius: 50%;
+    background: #53bdeb;
+    box-shadow: 0 0 0 0 rgba(83, 189, 235, .30);
+    animation: whatsiapp-transcricao-ring 1.25s ease-out infinite;
+}
+
+.midia-audio-transcricao-status::after,
+#respostaIA.ia-transcrevendo-audio::after {
+    content: "";
+    display: inline-block;
+    width: 18px;
+    height: 8px;
+    margin-left: 7px;
+    vertical-align: middle;
+    background:
+        radial-gradient(circle, currentColor 2px, transparent 2.4px) 0 50% / 6px 8px no-repeat,
+        radial-gradient(circle, currentColor 2px, transparent 2.4px) 6px 50% / 6px 8px no-repeat,
+        radial-gradient(circle, currentColor 2px, transparent 2.4px) 12px 50% / 6px 8px no-repeat;
+    animation: whatsiapp-transcricao-pulso .9s ease-in-out infinite;
+}
+
+#respostaIA.ia-transcrevendo-audio {
+    position: relative;
+}
+
+@keyframes whatsiapp-transcricao-pulso {
+
+    0%,
+    100% {
+        opacity: .32;
+        transform: translateY(0);
+    }
+
+    50% {
+        opacity: 1;
+        transform: translateY(-1px);
+    }
+}
+
+@keyframes whatsiapp-transcricao-ring {
+    0% {
+        box-shadow: 0 0 0 0 rgba(83, 189, 235, .26);
+    }
+
+    70%,
+    100% {
+        box-shadow: 0 0 0 5px rgba(83, 189, 235, 0);
+    }
+}
+
+/* Ajuste fino do player: alinha o play/pausa ao eixo da onda sonora. */
+.midia-audio-whatsapp .midia-audio-play {
+    transform: translateY(-8px);
+}
+
+.midia-audio-whatsapp .midia-audio-play:active {
+    transform: translateY(-7px);
+}

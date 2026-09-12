@@ -1,0 +1,818 @@
+/* =========================================================
+   ADMIN - TESTE DE INTEGRIDADE DA IA
+   ========================================================= */
+
+.admin-teste-ia-secao {
+    margin-top: 14px;
+}
+
+.admin-teste-ia-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 14px;
+}
+
+.admin-teste-ia-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    margin-top: 13px;
+    padding: 11px 12px;
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, .025);
+    color: #c7d1d6;
+    font-size: 12px;
+    line-height: 1.4;
+    cursor: pointer;
+}
+
+.admin-teste-ia-check input {
+    margin-top: 2px;
+    accent-color: #20b35b;
+}
+
+.admin-teste-ia-perguntas {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 13px;
+}
+
+.admin-teste-ia-pergunta {
+    display: flex;
+    gap: 9px;
+    min-width: 0;
+    padding: 9px 10px;
+    border: 1px solid rgba(255, 255, 255, .07);
+    border-radius: 9px;
+    background: rgba(0, 0, 0, .10);
+}
+
+.admin-teste-ia-pergunta>span {
+    display: grid;
+    place-items: center;
+    flex: 0 0 22px;
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    background: rgba(32, 179, 91, .13);
+    color: #67d691;
+    font-size: 10px;
+    font-weight: 800;
+}
+
+.admin-teste-ia-pergunta>div {
+    min-width: 0;
+}
+
+.admin-teste-ia-pergunta strong,
+.admin-teste-ia-pergunta small {
+    display: block;
+}
+
+.admin-teste-ia-pergunta strong {
+    color: #e7eef1;
+    font-size: 11px;
+    line-height: 1.25;
+}
+
+.admin-teste-ia-pergunta small {
+    margin-top: 3px;
+    overflow: hidden;
+    color: #8fa0aa;
+    font-size: 10px;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-teste-ia-progresso {
+    margin-top: 14px;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 10px;
+    background: rgba(0, 0, 0, .12);
+}
+
+.admin-teste-ia-progresso-topo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.admin-teste-ia-progresso-topo strong {
+    color: #e7eef1;
+    font-size: 12px;
+}
+
+.admin-teste-ia-progresso-topo span {
+    color: #8fa0aa;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.admin-teste-ia-barra {
+    height: 6px;
+    margin: 9px 0 8px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .07);
+}
+
+.admin-teste-ia-barra>span {
+    display: block;
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    background: #20b35b;
+    transition: width 220ms ease;
+}
+
+.admin-teste-ia-resultados {
+    display: grid;
+    gap: 6px;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    margin-top: 9px;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.admin-teste-ia-resultado {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    padding: 8px 9px;
+    overflow: hidden;
+    box-sizing: border-box;
+    border: 1px solid rgba(255, 255, 255, .06);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .02);
+}
+
+.admin-teste-ia-resultado>span {
+    display: grid;
+    place-items: center;
+    flex: 0 0 20px;
+    width: 20px;
+    height: 20px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 900;
+}
+
+.admin-teste-ia-resultado.ok>span {
+    background: rgba(32, 179, 91, .16);
+    color: #63d48e;
+}
+
+.admin-teste-ia-resultado.warning {
+    border-color: rgba(216, 179, 93, .20);
+    background: rgba(216, 179, 93, .035);
+}
+
+.admin-teste-ia-resultado.warning>span {
+    background: rgba(216, 179, 93, .16);
+    color: #e3bd62;
+}
+
+.admin-teste-ia-resultado.warning strong {
+    color: #ead69a;
+}
+
+.admin-teste-ia-resultado.erro>span {
+    background: rgba(255, 88, 88, .15);
+    color: #ff8a8a;
+}
+
+.admin-teste-ia-resultado div {
+    flex: 1 1 auto;
+    width: 0;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.admin-teste-ia-resultado strong,
+.admin-teste-ia-resultado small {
+    display: block;
+}
+
+.admin-teste-ia-resultado strong {
+    color: #dde6ea;
+    font-size: 11px;
+}
+
+.admin-teste-ia-resultado small {
+    display: -webkit-box;
+    margin-top: 2px;
+    overflow: hidden;
+    color: #8798a2;
+    font-size: 10px;
+    line-height: 1.35;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    text-overflow: ellipsis;
+    -webkit-box-orient: vertical;
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
+}
+
+.admin-teste-ia-acoes {
+    margin-top: 13px;
+}
+
+@media (max-width: 760px) {
+
+    .admin-teste-ia-grid,
+    .admin-teste-ia-perguntas {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+
+/* =========================================================
+   ADMIN - RELATORIO DO TESTE DE INTEGRIDADE DA IA
+   ========================================================= */
+
+.admin-teste-ia-relatorio-modal[hidden] {
+    display: none !important;
+}
+
+.admin-teste-ia-relatorio-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10050;
+    display: grid;
+    place-items: center;
+    min-width: 0;
+    min-height: 0;
+    padding: 12px;
+    overflow: hidden;
+    box-sizing: border-box;
+    background: rgba(7, 10, 12, .82);
+    backdrop-filter: blur(4px);
+}
+
+.admin-teste-ia-relatorio-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: calc(100% - 24px);
+    max-width: 920px;
+    height: calc(100% - 24px);
+    max-height: 760px;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    box-sizing: border-box;
+    border: 1px solid rgba(255, 255, 255, .11);
+    border-radius: 14px;
+    background: #11181c;
+    box-shadow: 0 22px 70px rgba(0, 0, 0, .46);
+}
+
+.admin-teste-ia-relatorio-topo {
+    display: block;
+    min-width: 0;
+    padding: 16px 58px 13px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, .08);
+}
+
+.admin-teste-ia-relatorio-topo>div {
+    min-width: 0;
+}
+
+.admin-teste-ia-relatorio-topo .admin-config-desc {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+}
+
+.admin-teste-ia-relatorio-fechar {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    margin: 0;
+    border: 1px solid rgba(255, 255, 255, .10);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .05);
+    color: #d8e1e5;
+    font-size: 19px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    appearance: none;
+}
+
+.admin-teste-ia-relatorio-fechar:hover {
+    background: rgba(255, 255, 255, .10);
+}
+
+.admin-teste-ia-relatorio-fechar:focus-visible {
+    outline: 2px solid rgba(35, 190, 104, .70);
+    outline-offset: 2px;
+}
+
+.admin-teste-ia-relatorio-texto {
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+    padding: 14px 16px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    box-sizing: border-box;
+    background: #0b1114;
+    color: #cbd6db;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 10.5px;
+    line-height: 1.48;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    user-select: text;
+}
+
+.admin-teste-ia-relatorio-acoes {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    flex: 0 0 auto;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 12px 12px;
+    box-sizing: border-box;
+    border-top: 1px solid rgba(255, 255, 255, .08);
+    background: #11181c;
+}
+
+.admin-teste-ia-relatorio-acoes .admin-oculto-acao {
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    white-space: nowrap;
+}
+
+#adminTesteIARelatorioCopiar {
+    grid-column: 1;
+}
+
+#adminTesteIARelatorioAbrirArquivo {
+    grid-column: 2;
+}
+
+#adminTesteIARelatorioFecharRodape {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 760px) {
+    .admin-teste-ia-relatorio-modal {
+        padding: 8px;
+    }
+
+    .admin-teste-ia-relatorio-card {
+        width: calc(100% - 8px);
+        height: calc(100% - 8px);
+        max-width: none;
+        max-height: none;
+    }
+
+    .admin-teste-ia-relatorio-topo {
+        padding: 13px 50px 11px 13px;
+    }
+
+    .admin-teste-ia-relatorio-fechar {
+        top: 11px;
+        right: 11px;
+    }
+
+    .admin-teste-ia-relatorio-texto {
+        padding: 12px 13px;
+        font-size: 10px;
+    }
+
+    .admin-teste-ia-relatorio-acoes {
+        grid-template-columns: 1fr;
+        padding: 9px;
+    }
+
+    #adminTesteIARelatorioCopiar,
+    #adminTesteIARelatorioAbrirArquivo,
+    #adminTesteIARelatorioFecharRodape {
+        grid-column: 1;
+    }
+}
+
+
+/* Mantem o relatorio contido mesmo quando o painel administrativo usa transform. */
+.admin-teste-ia-relatorio-modal,
+.admin-teste-ia-relatorio-card,
+.admin-teste-ia-relatorio-texto {
+    box-sizing: border-box;
+}
+
+.admin-teste-ia-relatorio-card * {
+    max-width: 100%;
+}
+
+/* =========================================================
+   ADMIN - BILLING E CONSUMO REAL
+   ========================================================= */
+
+.admin-billing-consumo-card {
+    margin: 14px 0;
+    padding: 14px;
+    border: 1px solid rgba(37, 211, 102, .18);
+    border-radius: 12px;
+    background: rgba(37, 211, 102, .035);
+}
+
+.admin-billing-consumo-topo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.admin-billing-consumo-topo>div {
+    min-width: 0;
+}
+
+.admin-billing-consumo-topo span:first-child {
+    display: block;
+    margin-bottom: 4px;
+    color: #71838d;
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .25px;
+}
+
+.admin-billing-consumo-topo strong {
+    display: block;
+    color: #e7eef1;
+    font-size: 13px;
+    font-weight: 850;
+}
+
+.admin-billing-consumo-metricas {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.admin-billing-consumo-metricas>div {
+    min-width: 0;
+    padding: 9px 10px;
+    border: 1px solid #223039;
+    border-radius: 9px;
+    background: #0c1519;
+}
+
+.admin-billing-consumo-metricas span {
+    display: block;
+    margin-bottom: 4px;
+    color: #71838d;
+    font-size: 9px;
+    font-weight: 750;
+}
+
+.admin-billing-consumo-metricas strong {
+    display: block;
+    overflow: hidden;
+    color: #e7eef1;
+    font-size: 12px;
+    font-weight: 850;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.admin-billing-consumo-barra {
+    height: 7px;
+    margin-top: 12px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #152027;
+}
+
+.admin-billing-consumo-barra>span {
+    display: block;
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--verde2);
+    transition: width .25s ease, background .2s ease;
+}
+
+.admin-billing-consumo-barra>span.limite {
+    background: var(--vermelho);
+}
+
+.admin-billing-consumo-meta {
+    margin-top: 8px;
+    color: #71838d;
+    font-size: 10px;
+    line-height: 1.4;
+}
+
+.admin-billing-precificacao {
+    margin-top: 14px;
+    padding: 13px;
+    border: 1px solid #26343c;
+    border-radius: 11px;
+    background: #0d161a;
+}
+
+.admin-billing-precificacao-topo {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.admin-billing-precificacao-topo>div {
+    min-width: 0;
+}
+
+.admin-billing-atualizar-precos {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    min-width: 112px;
+    height: 34px;
+    margin: 0 !important;
+    padding: 0 12px !important;
+    border: 1px solid rgba(37, 211, 102, .34) !important;
+    border-radius: 9px !important;
+    background: rgba(37, 211, 102, .10) !important;
+    color: #69e89a !important;
+    font-size: 10px !important;
+    font-weight: 800;
+}
+
+.admin-billing-atualizar-precos:hover:not(:disabled) {
+    background: rgba(37, 211, 102, .17) !important;
+}
+
+.admin-billing-atualizar-precos:disabled {
+    opacity: .52;
+    cursor: default;
+}
+
+.admin-billing-precificacao-topo strong {
+    display: block;
+    color: #dfe7eb;
+    font-size: 12px;
+    font-weight: 850;
+}
+
+.admin-billing-precificacao-topo span {
+    display: block;
+    margin-top: 3px;
+    color: #71838d;
+    font-size: 10px;
+    line-height: 1.4;
+}
+
+.admin-billing-precificacao-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 9px;
+    margin-top: 11px;
+}
+
+.admin-billing-precificacao-grid label {
+    min-width: 0;
+}
+
+.admin-billing-precificacao-grid label>span {
+    display: block;
+    min-height: 28px;
+    margin-bottom: 5px;
+    color: #82939c;
+    font-size: 9px;
+    font-weight: 750;
+    line-height: 1.35;
+}
+
+.admin-billing-precificacao-grid input {
+    width: 100%;
+}
+
+.admin-billing-campo-auto[readonly] {
+    color: #c7d2d8;
+    background: #101a1f;
+    border-color: #25333b;
+    cursor: default;
+}
+
+.admin-billing-precificacao-status {
+    margin-top: 10px;
+    padding-top: 9px;
+    border-top: 1px solid #1f2b31;
+    color: #71838d;
+    font-size: 9px;
+    line-height: 1.45;
+}
+
+.admin-billing-precificacao-status.erro {
+    color: #d9a44d;
+}
+
+@media (max-width: 760px) {
+    .admin-billing-precificacao-topo {
+        flex-direction: column;
+    }
+
+    .admin-billing-atualizar-precos {
+        width: 100% !important;
+    }
+
+    .admin-billing-consumo-metricas,
+    .admin-billing-precificacao-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* =========================================================
+   BILLING - AVISOS CONFIGURAVEIS DE CONSUMO
+   ========================================================= */
+
+.admin-billing-avisos {
+    margin-top: 16px;
+    padding: 16px;
+    border: 1px solid #2a3942;
+    border-radius: 14px;
+    background: #121b20;
+}
+
+.admin-billing-avisos-topo {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+}
+
+.admin-billing-avisos-topo>div {
+    min-width: 0;
+}
+
+.admin-billing-avisos-topo strong {
+    display: block;
+    color: #f0f5f7;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.admin-billing-avisos-topo>div>span {
+    display: block;
+    margin-top: 4px;
+    color: #8fa0a9;
+    font-size: 11px;
+    line-height: 1.45;
+}
+
+.admin-status-pill.aviso {
+    flex: 0 0 auto;
+    border-color: rgba(229, 165, 10, .35);
+    background: rgba(229, 165, 10, .10);
+    color: #f0c35c;
+}
+
+.admin-billing-avisos-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(118px, 1fr));
+    gap: 8px;
+}
+
+.admin-billing-aviso-item {
+    min-width: 0;
+    padding: 11px;
+    border: 1px solid #26343b;
+    border-radius: 11px;
+    background: #162126;
+}
+
+.admin-billing-aviso-toggle {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 9px;
+    color: #d8e0e4;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.admin-billing-aviso-toggle input {
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    accent-color: var(--verde2);
+}
+
+.admin-billing-aviso-percentual {
+    height: 38px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 9px;
+    border: 1px solid #304047;
+    border-radius: 9px;
+    background: #10181c;
+}
+
+.admin-billing-aviso-percentual:focus-within {
+    border-color: var(--verde2);
+}
+
+.admin-billing-aviso-percentual input {
+    flex: 1;
+    min-width: 0;
+    height: 34px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    font-weight: 800;
+}
+
+.admin-billing-aviso-percentual>span {
+    color: #7f919b;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.admin-billing-avisos-rodape {
+    margin-top: 11px;
+    color: #71838d;
+    font-size: 10px;
+    line-height: 1.45;
+}
+
+.toast-interno.billing-toast {
+    cursor: default;
+}
+
+.toast-interno.billing-aviso {
+    border-color: rgba(229, 165, 10, .38);
+}
+
+.toast-interno.billing-bloqueio {
+    border-color: rgba(239, 83, 80, .46);
+}
+
+.billing-toast-avatar {
+    flex-basis: 48px;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: rgba(229, 165, 10, .14);
+    color: #f0c35c;
+    font-size: 12px;
+}
+
+.billing-bloqueio .billing-toast-avatar {
+    background: rgba(239, 83, 80, .14);
+    color: #ff7774;
+    font-size: 20px;
+}
+
+.billing-toast-preview {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+}
+
+@media (max-width: 920px) {
+    .admin-billing-avisos-grid {
+        grid-template-columns: repeat(2, minmax(130px, 1fr));
+    }
+}
+
+@media (max-width: 560px) {
+    .admin-billing-avisos-topo {
+        flex-direction: column;
+    }
+
+    .admin-billing-avisos-grid {
+        grid-template-columns: 1fr;
+    }
+}
+

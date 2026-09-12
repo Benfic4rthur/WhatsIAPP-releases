@@ -1,0 +1,1692 @@
+/* =========================================================
+   PADRAO VISUAL WHATSAPP - ETAPA 1
+   Estrutura geral, lista de conversas e nova conversa.
+   Mantem os recursos exclusivos do WhatsIAPP.
+   ========================================================= */
+
+:root {
+    --wa-fundo: #0b141a;
+    --wa-painel: #111b21;
+    --wa-painel-topo: #202c33;
+    --wa-hover: #202c33;
+    --wa-selecionado: #2a3942;
+    --wa-borda: #222d34;
+    --wa-texto: #e9edef;
+    --wa-texto2: #8696a0;
+    --wa-verde: #00a884;
+    --wa-verde-claro: #00c781;
+    --wa-msg-enviada: #005c4b;
+    --wa-msg-recebida: #202c33;
+
+    --fundo: var(--wa-fundo);
+    --painel: var(--wa-painel);
+    --painel2: var(--wa-painel-topo);
+    --painel3: var(--wa-msg-recebida);
+    --borda: var(--wa-borda);
+    --texto: var(--wa-texto);
+    --texto2: var(--wa-texto2);
+    --verde: var(--wa-verde-claro);
+    --verde2: var(--wa-verde);
+    --verdeMensagem: var(--wa-msg-enviada);
+}
+
+body {
+    background: var(--wa-fundo);
+}
+
+.topo {
+    height: 58px;
+    padding: 0 18px;
+    background: #182229;
+    border-bottom-color: #243038;
+}
+
+.marca {
+    gap: 10px;
+    font-size: 18px;
+    font-weight: 650;
+}
+
+.status {
+    font-size: 12px;
+}
+
+.estrutura {
+    height: calc(100vh - 58px);
+    grid-template-columns: 360px minmax(420px, 1fr) 350px;
+}
+
+.lateral {
+    position: relative;
+    padding: 0;
+    background: var(--wa-painel);
+    border-right: 1px solid var(--wa-borda);
+}
+
+.lateral-cabecalho {
+    flex: 0 0 60px;
+    min-height: 60px;
+    padding: 0 13px 0 17px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: var(--wa-painel-topo);
+}
+
+.lateral-titulo {
+    color: var(--wa-texto);
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -.25px;
+}
+
+.icone-topo {
+    flex: 0 0 38px !important;
+    width: 38px !important;
+    min-width: 38px !important;
+    height: 38px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    border: 0 !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+    color: #aebac1 !important;
+}
+
+.icone-topo:hover {
+    background: rgba(255, 255, 255, .08) !important;
+    color: #e9edef !important;
+}
+
+.icone-topo svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.busca-wrap,
+.nova-conversa-busca-wrap {
+    position: relative;
+    flex: 0 0 auto;
+    margin: 7px 12px 8px;
+}
+
+.busca-icone {
+    position: absolute;
+    z-index: 2;
+    left: 13px;
+    top: 50%;
+    width: 17px;
+    height: 17px;
+    transform: translateY(-50%);
+    fill: none;
+    stroke: #8696a0;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    pointer-events: none;
+}
+
+.busca,
+.nova-conversa-busca {
+    width: 100%;
+    height: 36px;
+    margin: 0 !important;
+    padding: 0 14px 0 43px;
+    border: 0;
+    border-radius: 8px;
+    outline: none;
+    background: var(--wa-painel-topo);
+    color: var(--wa-texto);
+    font: inherit;
+    font-size: 13px;
+}
+
+.busca::placeholder,
+.nova-conversa-busca::placeholder {
+    color: #8696a0;
+}
+
+.busca:focus,
+.nova-conversa-busca:focus {
+    border-color: transparent;
+    box-shadow: inset 0 0 0 1px rgba(0, 168, 132, .22);
+}
+
+.abas {
+    flex: 0 0 auto;
+    display: flex;
+    grid-template-columns: none;
+    gap: 6px;
+    padding: 0 12px 8px;
+    margin: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.abas::-webkit-scrollbar {
+    display: none;
+}
+
+.aba {
+    flex: 0 0 auto;
+    width: auto !important;
+    min-width: 0;
+    margin: 0 !important;
+    padding: 6px 11px !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    background: #202c33 !important;
+    color: #aebac1 !important;
+    font-size: 12px;
+    line-height: 18px;
+    white-space: nowrap;
+}
+
+.aba:hover {
+    background: #26343c !important;
+    color: #d7dee2 !important;
+}
+
+.aba.ativa {
+    background: rgba(0, 168, 132, .18) !important;
+    color: #00c781 !important;
+}
+
+#listaConversas {
+    padding: 0;
+}
+
+.conversa {
+    min-height: 72px;
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: inset 0 -1px 0 rgba(134, 150, 160, .10);
+    transition: background 90ms ease;
+}
+
+.conversa:hover {
+    background: var(--wa-hover);
+}
+
+.conversa.ativa {
+    background: var(--wa-selecionado);
+}
+
+.conversa-conteudo {
+    flex: 1;
+    min-width: 0;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+}
+
+.conversa-linha-topo,
+.conversa-linha-preview {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.conversa-nome {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    color: var(--wa-texto);
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 20px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.conversa-horario {
+    flex: 0 0 auto;
+    color: var(--wa-texto2);
+    font-size: 11px;
+    line-height: 18px;
+}
+
+.conversa-preview {
+    flex: 1;
+    min-width: 0;
+    color: var(--wa-texto2);
+    font-size: 13px;
+    line-height: 18px;
+}
+
+.conversa-nao-lida .conversa-nome {
+    font-weight: 650;
+}
+
+.conversa-nao-lida .conversa-horario {
+    color: var(--wa-verde-claro);
+}
+
+.conversa-badge-nao-lidas {
+    margin-left: auto !important;
+    min-width: 19px !important;
+    height: 19px !important;
+    padding: 0 5px !important;
+    background: var(--wa-verde-claro) !important;
+    color: #07120b !important;
+    font-size: 10px !important;
+    line-height: 19px !important;
+}
+
+.chat {
+    position: relative;
+    min-width: 0;
+    background: var(--wa-fundo);
+}
+
+.chat-topo {
+    min-height: 60px;
+    padding: 0 16px;
+    background: var(--wa-painel-topo);
+    border-bottom: 0;
+}
+
+.chat-nome {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.chat-status {
+    margin-top: 1px;
+    font-size: 11px;
+}
+
+.mensagens {
+    padding: 18px 5.5%;
+    background-color: #0b141a;
+    background-image:
+        radial-gradient(circle at 14px 14px, rgba(255, 255, 255, .018) 1px, transparent 1.4px),
+        radial-gradient(circle at 42px 34px, rgba(255, 255, 255, .012) 1px, transparent 1.4px);
+    background-size: 56px 56px;
+}
+
+.mensagem {
+    max-width: 66%;
+    padding: 7px 9px 6px;
+    margin-bottom: 4px;
+    border-radius: 8px;
+    line-height: 1.35;
+    box-shadow: 0 1px .5px rgba(0, 0, 0, .22);
+}
+
+.mensagem.recebida {
+    background: var(--wa-msg-recebida);
+}
+
+.mensagem.minha {
+    background: var(--wa-msg-enviada);
+}
+
+.hora {
+    color: rgba(233, 237, 239, .60);
+}
+
+#compositorMensagem {
+    min-height: 62px !important;
+    padding: 9px 12px !important;
+    gap: 7px !important;
+    border-top: 0 !important;
+    background: var(--wa-painel-topo) !important;
+}
+
+#campoMensagem {
+    min-height: 42px !important;
+    border: 0 !important;
+    background: #2a3942 !important;
+    color: #e9edef !important;
+}
+
+#campoMensagem::placeholder {
+    color: #8696a0;
+}
+
+.ia {
+    background: var(--wa-painel);
+    border-left-color: var(--wa-borda);
+}
+
+.resposta {
+    background: #182229;
+}
+
+/* Nova conversa */
+.nova-conversa-painel {
+    position: absolute;
+    inset: 0;
+    z-index: 40;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--wa-painel);
+}
+
+.nova-conversa-painel[hidden] {
+    display: none !important;
+}
+
+.nova-conversa-topo {
+    flex: 0 0 60px;
+    min-height: 60px;
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--wa-painel-topo);
+}
+
+.nova-conversa-voltar {
+    flex: 0 0 38px !important;
+    width: 38px !important;
+    min-width: 38px !important;
+    height: 38px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    border: 0 !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+    color: #d2d9dd !important;
+}
+
+.nova-conversa-voltar:hover {
+    background: rgba(255, 255, 255, .07) !important;
+}
+
+.nova-conversa-voltar svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.nova-conversa-titulo {
+    color: var(--wa-texto);
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.nova-conversa-secao,
+.nova-conversa-separador {
+    flex: 0 0 auto;
+    padding: 12px 16px 8px;
+    color: var(--wa-verde-claro);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.nova-conversa-separador {
+    padding-top: 16px;
+}
+
+.nova-conversa-lista {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.nova-conversa-lista::-webkit-scrollbar {
+    width: 8px;
+}
+
+.nova-conversa-lista::-webkit-scrollbar-thumb {
+    border-radius: 20px;
+    background: #374248;
+}
+
+.nova-conversa-item {
+    width: 100% !important;
+    min-height: 66px;
+    margin: 0 !important;
+    padding: 9px 14px !important;
+    display: flex !important;
+    align-items: center;
+    gap: 12px;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: var(--wa-texto) !important;
+    text-align: left;
+    box-shadow: inset 0 -1px 0 rgba(134, 150, 160, .09);
+}
+
+.nova-conversa-item:hover {
+    background: var(--wa-hover) !important;
+}
+
+.nova-conversa-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.nova-conversa-item-nome {
+    overflow: hidden;
+    color: var(--wa-texto);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.nova-conversa-item-numero {
+    margin-top: 2px;
+    overflow: hidden;
+    color: var(--wa-texto2);
+    font-size: 12px;
+    line-height: 17px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.nova-conversa-avatar-novo {
+    flex: 0 0 46px;
+    width: 46px;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--wa-verde);
+    color: white;
+    font-size: 27px;
+    font-weight: 300;
+    line-height: 1;
+}
+
+.nova-conversa-vazio {
+    padding: 34px 22px;
+    color: var(--wa-texto2);
+    font-size: 13px;
+    line-height: 1.45;
+    text-align: center;
+}
+
+@media (max-width: 1180px) {
+    .estrutura {
+        grid-template-columns: 340px minmax(390px, 1fr) 310px;
+    }
+}
+
+/* =========================================================
+   PADRAO VISUAL WHATSAPP - ETAPA 2
+   Navegacao lateral e lista de conversas inspiradas no WhatsApp Web.
+   Ajuste visual isolado, sem alterar o motor de mensagens ou IA.
+   ========================================================= */
+
+.estrutura {
+    grid-template-columns: 430px minmax(420px, 1fr) 350px;
+}
+
+.lateral {
+    position: relative;
+    min-width: 0;
+    display: flex;
+    flex-direction: row;
+    padding: 0;
+    overflow: hidden;
+    background: var(--wa-painel);
+    border-right: 1px solid var(--wa-borda);
+}
+
+.wa-nav-rail {
+    flex: 0 0 54px;
+    width: 54px;
+    min-width: 54px;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 0 10px;
+    background: #202c33;
+    border-right: 1px solid rgba(134, 150, 160, .10);
+}
+
+.wa-nav-rail-topo,
+.wa-nav-rail-rodape {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+}
+
+.wa-rail-btn {
+    position: relative;
+    flex: 0 0 38px !important;
+    width: 38px !important;
+    min-width: 38px !important;
+    height: 38px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    border: 0 !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+    color: #aebac1 !important;
+    transition: background 100ms ease, color 100ms ease;
+}
+
+.wa-rail-btn:hover {
+    background: rgba(255, 255, 255, .08) !important;
+    color: #e9edef !important;
+}
+
+.wa-rail-btn.ativa {
+    background: #374248 !important;
+    color: #e9edef !important;
+}
+
+.wa-rail-btn.ativa::after {
+    content: "";
+    position: absolute;
+    left: -8px;
+    top: 9px;
+    bottom: 9px;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: #00a884;
+}
+
+.wa-rail-btn[hidden] {
+    display: none !important;
+}
+
+.wa-rail-btn svg {
+    width: 21px;
+    height: 21px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.wa-rail-contador {
+    position: absolute;
+    right: -2px;
+    top: -2px;
+    min-width: 15px;
+    height: 15px;
+    padding: 0 3px;
+    border-radius: 999px;
+    background: #00a884;
+    color: #07120b;
+    font-size: 8px;
+    font-weight: 800;
+    line-height: 15px;
+    text-align: center;
+}
+
+.wa-rail-contador:empty {
+    display: none;
+}
+
+.lateral-corpo {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #111b21;
+}
+
+.lateral-cabecalho {
+    flex: 0 0 58px;
+    min-height: 58px;
+    padding: 0 12px 0 16px;
+    background: #111b21;
+}
+
+.lateral-titulo {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -.35px;
+}
+
+.lateral-acoes-topo {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.icone-topo-menu svg circle {
+    fill: currentColor;
+    stroke: none;
+}
+
+.nova-conversa-atalho {
+    background: #00a884 !important;
+    color: #081711 !important;
+}
+
+.nova-conversa-atalho:hover {
+    background: #06b892 !important;
+    color: #06110d !important;
+}
+
+.nova-conversa-atalho svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2.2;
+}
+
+.busca-wrap {
+    margin: 5px 12px 7px;
+}
+
+.busca {
+    height: 36px;
+    border-radius: 18px;
+    background: #202c33;
+    font-size: 12px;
+}
+
+.abas {
+    min-height: 34px;
+    padding: 0 12px 8px;
+    gap: 6px;
+    overflow-x: auto;
+}
+
+.abas.ocultas {
+    display: none !important;
+}
+
+.aba {
+    min-height: 28px;
+    padding: 4px 11px !important;
+    border: 1px solid #2f3b42 !important;
+    background: transparent !important;
+    color: #aebac1 !important;
+    font-size: 11px;
+    line-height: 18px;
+}
+
+.aba:hover {
+    background: #202c33 !important;
+}
+
+.aba.ativa {
+    border-color: rgba(0, 168, 132, .32) !important;
+    background: #103529 !important;
+    color: #d9fdd3 !important;
+}
+
+.aba-mais {
+    flex: 0 0 29px !important;
+    width: 29px !important;
+    min-width: 29px !important;
+    padding: 0 !important;
+    font-size: 18px !important;
+    font-weight: 300;
+}
+
+.aba-interna {
+    display: none !important;
+}
+
+#listaConversas {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.conversa {
+    position: relative;
+    min-height: 64px;
+    margin: 0;
+    padding: 0 10px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    cursor: pointer;
+    transition: background 85ms ease;
+}
+
+.conversa::after {
+    content: "";
+    position: absolute;
+    left: 65px;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background: rgba(134, 150, 160, .08);
+    pointer-events: none;
+}
+
+.conversa:hover {
+    background: #182229;
+}
+
+.conversa.ativa {
+    background: #202c33;
+}
+
+.conversa.ativa::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 7px;
+    bottom: 7px;
+    width: 2px;
+    border-radius: 0 2px 2px 0;
+    background: rgba(0, 168, 132, .75);
+}
+
+.conversa .avatar-contato {
+    flex: 0 0 42px;
+    width: 42px !important;
+    min-width: 42px !important;
+    height: 42px !important;
+    font-size: 15px !important;
+}
+
+.conversa-conteudo {
+    flex: 1;
+    min-width: 0;
+    align-self: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1px;
+    padding: 8px 0;
+}
+
+.conversa-linha-topo,
+.conversa-linha-preview {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.conversa-nome {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    color: #e9edef;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 18px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.conversa-horario {
+    flex: 0 0 auto;
+    color: #8696a0;
+    font-size: 10px;
+    line-height: 17px;
+}
+
+.conversa-preview {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    color: #8696a0;
+    font-size: 11px;
+    line-height: 17px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.conversa-nao-lida .conversa-nome {
+    color: #f3f7f8;
+    font-weight: 700;
+}
+
+.conversa-nao-lida .conversa-horario {
+    color: #00c781;
+}
+
+.conversa-badge-nao-lidas {
+    margin-left: auto !important;
+    min-width: 17px !important;
+    height: 17px !important;
+    padding: 0 4px !important;
+    background: #00a884 !important;
+    color: #06130e !important;
+    font-size: 9px !important;
+    line-height: 17px !important;
+}
+
+.vazio-lista {
+    padding: 30px 18px;
+    font-size: 12px;
+}
+
+.nova-conversa-painel {
+    left: 0;
+    right: 0;
+}
+
+.nova-conversa-topo {
+    min-height: 58px;
+    flex-basis: 58px;
+    background: #111b21;
+}
+
+@media (max-width: 1420px) {
+    .estrutura {
+        grid-template-columns: 400px minmax(390px, 1fr) 320px;
+    }
+}
+
+@media (max-width: 1180px) {
+    .estrutura {
+        grid-template-columns: 365px minmax(360px, 1fr) 290px;
+    }
+
+    .wa-nav-rail {
+        flex-basis: 50px;
+        width: 50px;
+        min-width: 50px;
+    }
+}
+
+
+
+/* =========================================================
+   AJUSTE VISUAL WHATSAPP - ETAPA 3
+   Remove a barra superior, elimina atalhos duplicados,
+   move o perfil para a lateral e melhora o estado vazio do chat.
+   ========================================================= */
+
+.topo {
+    display: none !important;
+}
+
+.estrutura {
+    height: 100vh !important;
+}
+
+#status {
+    display: none !important;
+}
+
+.lateral-cabecalho {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 66px;
+    padding: 10px 12px 8px 14px;
+}
+
+.lateral-marca {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.lateral-marca-logo {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    object-fit: cover;
+    display: block;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, .18);
+}
+
+.lateral-marca-texto {
+    color: #e9edef;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -.25px;
+}
+
+#btnMenuConversas,
+#abaMais,
+#btnRailConfig {
+    display: none !important;
+}
+
+.perfil-rail-area {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 0 2px;
+}
+
+#botaoPerfilApp {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    left: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    margin: 0 !important;
+    padding: 3px !important;
+}
+
+#botaoPerfilApp:hover {
+    transform: scale(1.04) !important;
+}
+
+#botaoPerfilApp:hover+#status,
+#botaoPerfilApp:focus-visible+#status,
+#status:hover {
+    transform: none !important;
+}
+
+.vazio-chat-home {
+    padding: 28px;
+}
+
+.vazio-chat-card {
+    width: min(560px, 100%);
+    padding: 34px 38px;
+    border-radius: 20px;
+    background: rgba(17, 27, 33, .88);
+    border: 1px solid rgba(134, 150, 160, .14);
+    box-shadow: 0 24px 48px rgba(0, 0, 0, .22);
+    text-align: center;
+}
+
+.vazio-chat-titulo {
+    color: #e9edef;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.vazio-chat-texto {
+    margin-top: 12px;
+    color: #aebac1;
+    font-size: 14px;
+    line-height: 1.65;
+}
+
+.vazio-chat-dica {
+    margin-top: 18px;
+    color: #00a884;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+
+/* =========================================================
+   AJUSTE VISUAL WHATSAPP - ETAPA 4
+   Roadmap no estado vazio da conversa.
+   ========================================================= */
+
+.vazio-chat-recursos {
+    margin-top: 20px;
+    display: grid;
+    gap: 9px;
+    text-align: left;
+}
+
+.vazio-chat-recurso {
+    padding: 12px 14px;
+    border: 1px solid rgba(134, 150, 160, .12);
+    border-radius: 12px;
+    background: rgba(32, 44, 51, .48);
+}
+
+.vazio-chat-recurso strong {
+    display: block;
+    color: #d9fdd3;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.vazio-chat-recurso span {
+    display: block;
+    margin-top: 4px;
+    color: #8696a0;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+
+/* =========================================================
+   AJUSTE VISUAL WHATSAPP - ETAPA 5
+   Roadmap mais visual, midias compactas, audio customizado
+   e fotos nos contatos salvos.
+   ========================================================= */
+
+.vazio-chat-card {
+    width: min(620px, 100%);
+    padding: 30px 32px 28px;
+    background:
+        radial-gradient(circle at 50% -20%, rgba(0, 168, 132, .14), transparent 42%),
+        rgba(17, 27, 33, .94);
+}
+
+.vazio-chat-badge {
+    width: fit-content;
+    margin: 0 auto 12px;
+    padding: 6px 10px;
+    border: 1px solid rgba(0, 168, 132, .28);
+    border-radius: 999px;
+    background: rgba(0, 168, 132, .10);
+    color: #7ee5c9;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .08em;
+}
+
+.vazio-chat-titulo {
+    font-size: 25px;
+}
+
+.vazio-chat-texto {
+    max-width: 500px;
+    margin: 10px auto 0;
+    font-size: 13px;
+}
+
+.vazio-chat-recursos {
+    margin-top: 20px;
+    gap: 10px;
+}
+
+.vazio-chat-recurso {
+    min-height: 72px;
+    padding: 11px 12px;
+    display: grid;
+    grid-template-columns: 46px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    border-color: rgba(134, 150, 160, .14);
+    background: linear-gradient(90deg, rgba(32, 44, 51, .82), rgba(24, 34, 41, .72));
+    transition: transform .15s ease, border-color .15s ease, background .15s ease;
+}
+
+.vazio-chat-recurso:hover {
+    transform: translateY(-1px);
+    border-color: rgba(0, 168, 132, .28);
+    background: linear-gradient(90deg, rgba(35, 50, 57, .92), rgba(24, 36, 42, .82));
+}
+
+.vazio-chat-recurso-icone {
+    width: 46px;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    background: rgba(0, 168, 132, .11);
+    font-size: 24px;
+    line-height: 1;
+}
+
+.vazio-chat-recurso-conteudo {
+    min-width: 0;
+}
+
+.vazio-chat-recurso strong {
+    color: #e9edef;
+    font-size: 13px;
+}
+
+.vazio-chat-recurso span {
+    margin-top: 3px;
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.vazio-chat-recurso small {
+    align-self: start;
+    margin-top: 2px;
+    padding: 4px 7px;
+    border-radius: 999px;
+    background: rgba(217, 253, 211, .08);
+    color: #7ee5c9;
+    font-size: 9px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.vazio-chat-dica {
+    margin-top: 17px;
+    font-size: 10px;
+}
+
+/* Imagens e videos devem ocupar somente o espaco real da midia. */
+.mensagem.mensagem-midia-imagem,
+.mensagem.mensagem-midia-video {
+    width: max-content;
+    max-width: min(66%, 450px);
+}
+
+.mensagem.mensagem-midia-imagem .midia-imagem,
+.mensagem.mensagem-midia-video .midia-video {
+    width: auto;
+    max-width: 100%;
+    height: auto;
+}
+
+.mensagem.mensagem-midia-imagem .midia-imagem {
+    max-height: 500px;
+}
+
+.mensagem.mensagem-midia-video .midia-video {
+    max-height: 430px;
+}
+
+/* Player de audio integrado ao visual do WhatsApp. */
+.mensagem.mensagem-midia-audio {
+    width: 340px;
+    max-width: min(66%, 340px);
+    min-width: 286px;
+    padding: 7px 8px 5px;
+}
+
+.midia-audio-whatsapp {
+    width: 100%;
+    min-height: 52px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #d9e2e7;
+}
+
+.midia-audio-elemento {
+    display: none !important;
+}
+
+.midia-audio-play {
+    flex: 0 0 34px !important;
+    width: 34px !important;
+    min-width: 34px !important;
+    height: 34px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    border: 0 !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+    color: #b8c5cb !important;
+}
+
+.midia-audio-play:hover {
+    background: rgba(255, 255, 255, .05) !important;
+    color: #e9edef !important;
+}
+
+.midia-audio-play-icone {
+    display: inline-block;
+    margin-left: 2px;
+    font-size: 17px;
+    line-height: 1;
+}
+
+.midia-audio-play-icone.pausa {
+    margin-left: 0;
+    font-size: 16px;
+    font-weight: 900;
+    letter-spacing: -2px;
+}
+
+.midia-audio-centro {
+    flex: 1;
+    min-width: 0;
+}
+
+.midia-audio-onda {
+    height: 24px;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.midia-audio-onda span {
+    flex: 1 1 0;
+    min-width: 2px;
+    max-width: 3px;
+    border-radius: 999px;
+    background: rgba(174, 186, 193, .55);
+    transition: background .08s ease;
+}
+
+.midia-audio-onda span.ativa {
+    background: #53bdeb;
+}
+
+.mensagem.minha .midia-audio-onda span {
+    background: rgba(217, 253, 211, .48);
+}
+
+.mensagem.minha .midia-audio-onda span.ativa {
+    background: #53bdeb;
+}
+
+.midia-audio-meta {
+    margin-top: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    color: rgba(233, 237, 239, .58);
+    font-size: 9px;
+    line-height: 12px;
+}
+
+.midia-audio-tipo {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.midia-audio-avatar {
+    position: relative;
+    flex: 0 0 38px;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+    border-radius: 50%;
+    background: #2a3942;
+    color: #c9d5da;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.midia-audio-avatar>img {
+    width: 38px;
+    height: 38px;
+    display: block;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.midia-audio-mic {
+    position: absolute;
+    right: -2px;
+    bottom: -2px;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #075e54;
+    border-radius: 50%;
+    background: #00a884;
+    font-size: 8px;
+    line-height: 1;
+}
+
+.mensagem.recebida .midia-audio-mic {
+    border-color: #202c33;
+}
+
+/* Fotos dos contatos salvos na nova conversa e no encaminhamento. */
+.nova-conversa-item .avatar-contato,
+.encaminhar-item .avatar-contato {
+    background: #2a3942 !important;
+}
+
+@media (max-width: 1180px) {
+    .mensagem.mensagem-midia-audio {
+        width: 310px;
+        min-width: 260px;
+    }
+
+    .vazio-chat-card {
+        width: min(560px, 100%);
+    }
+}
+
+
+/* Barra de gravação inspirada no WhatsApp Web. */
+.gravacao-whatsapp {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex: 0 1 760px;
+    width: calc(100% - 24px);
+    max-width: 760px;
+    min-width: 0;
+    height: 52px;
+    padding: 0 10px 0 8px;
+    margin: 0 auto;
+    border-radius: 26px;
+    background: #111b21;
+    border: 1px solid #24333c;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.gravacao-whatsapp-acao {
+    border: 0;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    color: #e9edef;
+    transition: transform .15s ease, opacity .15s ease, background .15s ease, color .15s ease;
+}
+
+.gravacao-whatsapp-acao:hover {
+    transform: scale(1.04);
+}
+
+.gravacao-whatsapp-acao:disabled {
+    opacity: .45;
+    cursor: default;
+    transform: none;
+}
+
+.gravacao-whatsapp-acao svg {
+    width: 18px;
+    height: 18px;
+    display: block;
+}
+
+.gravacao-whatsapp-excluir {
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+    color: #f15c6d;
+}
+
+.gravacao-whatsapp-estado {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.gravacao-whatsapp-topo {
+    flex: 0 0 auto;
+    min-width: 58px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.gravacao-whatsapp-indicador {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #ff6b81;
+    box-shadow: 0 0 0 0 rgba(255, 107, 129, .55);
+    animation: gravacaoWhastsiappPulse 1.2s infinite;
+}
+
+.gravacao-whatsapp-tempo {
+    color: #e9edef;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: .02em;
+    font-variant-numeric: tabular-nums;
+}
+
+.gravacao-whatsapp-onda {
+    flex: 1;
+    min-width: 0;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    overflow: hidden;
+}
+
+.gravacao-whatsapp-onda span {
+    flex: 0 0 3px;
+    width: 3px;
+    border-radius: 999px;
+    background: rgba(255, 141, 162, .62);
+    animation: gravacaoWhatsiappWave .95s ease-in-out infinite alternate;
+    transform-origin: center;
+}
+
+.gravacao-whatsapp-acoes {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.gravacao-whatsapp-pausar {
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .06);
+    color: #f8d1d7;
+}
+
+.gravacao-whatsapp-pausar:hover {
+    background: rgba(255, 255, 255, .1);
+}
+
+.gravacao-whatsapp-enviar {
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #00a884;
+    color: #10231c;
+}
+
+.gravacao-whatsapp-enviar svg {
+    width: 18px;
+    height: 18px;
+}
+
+.gravacao-whatsapp-enviar:hover {
+    background: #21c49c;
+}
+
+.gravacao-whatsapp.pausada .gravacao-whatsapp-indicador {
+    background: #96a7af;
+    animation: none;
+    box-shadow: none;
+}
+
+.gravacao-whatsapp.pausada .gravacao-whatsapp-onda span {
+    animation-play-state: paused;
+    opacity: .55;
+}
+
+@keyframes gravacaoWhastsiappPulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 107, 129, .55);
+    }
+
+    70% {
+        box-shadow: 0 0 0 8px rgba(255, 107, 129, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 107, 129, 0);
+    }
+}
+
+@keyframes gravacaoWhatsiappWave {
+    0% {
+        transform: scaleY(.45);
+        opacity: .45;
+    }
+
+    100% {
+        transform: scaleY(1.15);
+        opacity: 1;
+    }
+}
+
+
+/* Badge de mensagens nao lidas no filtro lateral. */
+.aba-contador-nao-lidas {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 17px;
+    height: 17px;
+    margin-left: 4px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: #00a884;
+    color: #07120b;
+    font-size: 9px;
+    font-weight: 800;
+    line-height: 17px;
+    vertical-align: middle;
+}
+
+.aba-contador-nao-lidas:empty {
+    display: none;
+}
+
+/* =========================================================
+   PAINEL DA IA CONTEXTUAL
+   O painel lateral ocupa espaco apenas no modo Assistido.
+   ========================================================= */
+
+.estrutura {
+    transition: grid-template-columns .22s cubic-bezier(.2, .85, .25, 1);
+}
+
+.ia {
+    min-width: 0;
+    overflow: hidden;
+    opacity: 1;
+    transform: translateX(0);
+    transition:
+        opacity .17s ease,
+        transform .22s cubic-bezier(.2, .85, .25, 1),
+        padding .22s cubic-bezier(.2, .85, .25, 1),
+        border-color .17s ease;
+}
+
+body:not(.whatsiapp-ia-lateral-aberta) .estrutura {
+    grid-template-columns: 430px minmax(420px, 1fr) 0;
+}
+
+body:not(.whatsiapp-ia-lateral-aberta) .ia {
+    width: 0;
+    min-width: 0;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    border-left-color: transparent !important;
+    opacity: 0;
+    transform: translateX(28px);
+    pointer-events: none;
+}
+
+@media (max-width: 1420px) {
+    body:not(.whatsiapp-ia-lateral-aberta) .estrutura {
+        grid-template-columns: 400px minmax(390px, 1fr) 0;
+    }
+}
+
+@media (max-width: 1180px) {
+    body:not(.whatsiapp-ia-lateral-aberta) .estrutura {
+        grid-template-columns: 365px minmax(360px, 1fr) 0;
+    }
+}
+
+/* =========================================================
+   HORA E CONFIRMACAO NO PADRAO WHATSAPP WEB
+   Texto + metadados compartilham a ultima linha nas mensagens de texto.
+   Midias permanecem com o layout atual para nao afetar audio, video e imagem.
+   ========================================================= */
+
+.mensagem:not(.mensagem-midia) .mensagem-texto:not(.mensagem-apagada-aviso) {
+    display: inline;
+}
+
+.mensagem:not(.mensagem-midia) > .hora {
+    float: right;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 3px;
+    margin: 4px 0 0 9px;
+    color: rgba(233, 237, 239, .58);
+    font-size: 9px;
+    line-height: 12px;
+    white-space: nowrap;
+    text-align: right;
+}
+
+.mensagem:not(.mensagem-midia)::after {
+    content: "";
+    display: block;
+    clear: both;
+}
+
+.hora-texto {
+    color: rgba(233, 237, 239, .58);
+}
+
+.hora-status {
+    display: inline-block;
+    margin-left: 1px;
+    color: rgba(233, 237, 239, .62);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 11px;
+    letter-spacing: -2px;
+    transform: translateY(3px);
+}
+
+.hora-status-lida {
+    color: #53bdeb;
+    opacity: 1;
+}
+
+.hora-status-pendente {
+    letter-spacing: 0;
+    font-size: 10px;
+}
+

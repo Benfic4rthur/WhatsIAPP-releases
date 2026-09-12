@@ -1,0 +1,45 @@
+TESTADOR MESTRE WHATSIAPP
+Versao: 1.3.3-sync-leitura-protegida
+
+ESCOPO
+- Alteracoes restritas a pasta testador-mestre.
+- Nenhum arquivo funcional do WhatsIAPP foi alterado por este pacote.
+- Protege as correcoes aprovadas de sincronizacao silenciosa, nao lidas e leitura bidirecional.
+
+COBERTURA NOVA
+- TM-P009: catch-up inicial e bloqueado antes de som/renderer nas fontes WPP e Baileys.
+- TM-P010: unreadCount real do WPPConnect entra no estado compartilhado.
+- TM-P011: main mantem nao lidas WPP com geracao/revisao.
+- TM-P012: snapshot/fallback atrasado nao rebaixa estado autoritativo.
+- TM-P013: observa convergencia real entre naoLidasLocal e naoLidasWpp por mais de um ciclo.
+- TM-P014: polling de leitura externa permanece em 2000 ms.
+- TM-P015: leitura continua usando Baileys + WPPConnect sendSeen.
+- TM-P016: teste R2 real, somente no alvo autorizado, marca como lida e exige sucesso nos dois workers + convergencia para zero.
+- TM-P017: criterio manual documentado, leitura no celular/Web deve refletir no WhatsIAPP em ate 3 segundos.
+
+SEGURANCA
+- O bridge ganhou uma whitelist separada de acao real contendo somente marcar-conversa-lida.
+- TM-P016 continua protegido pela barreira R2 e exige conversa de teste escolhida.
+- Nenhum envio de mensagem foi adicionado.
+- Nenhuma conversa e apagada, arquivada, bloqueada ou modificada fora da leitura controlada.
+- Perfil Rapido e Completo Seguro continuam sem marcar conversa real como lida.
+
+COBERTURA
+- Matriz total: 195 casos.
+- Testes executaveis: 126.
+- Perfil Rapido: 58.
+- Perfil Seguro: 121.
+- Perfil Real: 126.
+- TM-P017 permanece MANUAL e nao e executado automaticamente.
+
+ARQUIVOS AJUSTADOS
+- bridge-renderer.js
+- testes-expandidos.js
+- matriz-v1.js
+- index.js da pasta testador-mestre
+
+VALIDACAO ANTES DA ENTREGA
+- node --check nos 4 arquivos JS alterados: OK.
+- IDs duplicados na matriz: 0.
+- Contratos conferidos contra as fontes funcionais atuais: OK.
+- Nenhum arquivo funcional incluido no pacote.

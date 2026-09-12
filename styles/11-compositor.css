@@ -1,0 +1,366 @@
+/* =========================================================
+   COMPOSITOR WHATSAPP - ETAPA 7
+   + anexos, figurinhas, campo de texto e microfone.
+   ========================================================= */
+
+#compositorMensagem {
+    gap: 4px !important;
+    padding: 8px 10px !important;
+    min-height: 58px !important;
+    background: #202c33 !important;
+    border-top-color: rgba(134, 150, 160, .12) !important;
+}
+
+#campoMensagem {
+    height: 42px !important;
+    min-height: 42px !important;
+    padding: 10px 14px !important;
+    border: 0 !important;
+    border-radius: 9px !important;
+    background: #2a3942 !important;
+    box-shadow: none !important;
+    color: #e9edef !important;
+}
+
+.compositor-acao {
+    flex: 0 0 40px !important;
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    border: 0 !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+    color: #aebac1 !important;
+    cursor: pointer;
+    transition: background .12s ease, color .12s ease;
+}
+
+.compositor-acao:hover {
+    background: rgba(255, 255, 255, .07) !important;
+    color: #e9edef !important;
+}
+
+.compositor-acao:disabled {
+    opacity: .38;
+    cursor: default;
+}
+
+.compositor-acao svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.compositor-anexar svg {
+    width: 24px;
+    height: 24px;
+    stroke-width: 1.7;
+}
+
+.compositor-microfone {
+    margin-left: 2px !important;
+}
+
+.compositor-microfone svg {
+    width: 21px;
+    height: 21px;
+}
+
+.menu-anexos-whatsapp {
+    position: absolute;
+    left: 10px;
+    bottom: 62px;
+    z-index: 1010;
+    width: 190px;
+    padding: 7px;
+    border: 1px solid rgba(134, 150, 160, .14);
+    border-radius: 12px;
+    background: #233138;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, .5);
+}
+
+.menu-anexos-item {
+    width: 100% !important;
+    min-height: 43px;
+    margin: 0 !important;
+    padding: 7px 10px !important;
+    display: flex !important;
+    align-items: center;
+    gap: 11px;
+    border: 0 !important;
+    border-radius: 8px !important;
+    background: transparent !important;
+    color: #e9edef !important;
+    text-align: left;
+    font-size: 13px !important;
+}
+
+.menu-anexos-item:hover {
+    background: rgba(255, 255, 255, .07) !important;
+}
+
+.menu-anexos-icone {
+    flex: 0 0 27px;
+    width: 27px;
+    height: 27px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+}
+
+.menu-anexos-icone svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.menu-anexos-item-arquivo .menu-anexos-icone {
+    color: #7c69ff;
+}
+
+.menu-anexos-item-midia .menu-anexos-icone {
+    color: #33a7ff;
+}
+
+.menu-anexos-item-audio .menu-anexos-icone {
+    color: #ff7a45;
+}
+
+.menu-anexos-item-contato .menu-anexos-icone {
+    color: #35b7dd;
+}
+
+.painel-compositor {
+    position: absolute;
+    left: 10px;
+    bottom: 62px;
+    z-index: 1012;
+    overflow: hidden;
+    border: 1px solid rgba(134, 150, 160, .14);
+    border-radius: 14px;
+    background: #202c33;
+    color: #e9edef;
+    box-shadow: 0 22px 60px rgba(0, 0, 0, .55);
+}
+
+.painel-compositor[hidden] {
+    display: none !important;
+}
+
+.painel-compositor-topo {
+    min-height: 52px;
+    padding: 10px 10px 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    border-bottom: 1px solid rgba(134, 150, 160, .1);
+}
+
+.painel-compositor-topo strong {
+    display: block;
+    color: #f0f2f5;
+    font-size: 14px;
+}
+
+.painel-compositor-topo span {
+    display: block;
+    margin-top: 2px;
+    color: #8696a0;
+    font-size: 10px;
+}
+
+.painel-compositor-fechar {
+    flex: 0 0 34px !important;
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+    color: #aebac1 !important;
+    font-size: 23px !important;
+    line-height: 34px !important;
+}
+
+.painel-compositor-fechar:hover {
+    background: rgba(255, 255, 255, .07) !important;
+    color: #fff !important;
+}
+
+.painel-contatos-compositor {
+    width: 370px;
+    max-width: calc(100% - 20px);
+    max-height: min(520px, calc(100vh - 150px));
+}
+
+.painel-compositor-busca-wrap {
+    position: relative;
+    margin: 10px 12px 8px;
+}
+
+.painel-compositor-busca-wrap>svg {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    width: 17px;
+    height: 17px;
+    transform: translateY(-50%);
+    fill: none;
+    stroke: #8696a0;
+    stroke-width: 1.8;
+}
+
+.painel-compositor-busca {
+    width: 100%;
+    height: 38px;
+    padding: 0 12px 0 38px;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    outline: none;
+    background: #2a3942;
+    color: #e9edef;
+    font: inherit;
+    font-size: 12px;
+}
+
+.painel-compositor-busca:focus {
+    border-color: rgba(0, 168, 132, .7);
+}
+
+.painel-contatos-lista {
+    max-height: 390px;
+    overflow-y: auto;
+    padding: 0 7px 8px;
+}
+
+.painel-contato-item {
+    width: 100% !important;
+    min-height: 57px;
+    margin: 0 !important;
+    padding: 7px 8px !important;
+    display: flex !important;
+    align-items: center;
+    gap: 10px;
+    border: 0 !important;
+    border-radius: 8px !important;
+    background: transparent !important;
+    color: #e9edef !important;
+    text-align: left;
+}
+
+.painel-contato-item:hover {
+    background: rgba(255, 255, 255, .055) !important;
+}
+
+.painel-contato-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.painel-contato-info strong,
+.painel-contato-info small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.painel-contato-info strong {
+    font-size: 12px;
+    font-weight: 650;
+}
+
+.painel-contato-info small {
+    margin-top: 2px;
+    color: #8696a0;
+    font-size: 10px;
+}
+
+.painel-figurinhas-compositor {
+    width: 440px;
+    max-width: calc(100% - 20px);
+    max-height: min(500px, calc(100vh - 150px));
+}
+
+.painel-figurinhas-topo {
+    min-height: 58px;
+}
+
+.painel-figurinhas-grade {
+    min-height: 190px;
+    max-height: 390px;
+    padding: 10px;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+    overflow-y: auto;
+}
+
+.painel-figurinha-item {
+    aspect-ratio: 1 / 1;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 4px !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    border: 0 !important;
+    border-radius: 8px !important;
+    background: transparent !important;
+}
+
+.painel-figurinha-item:hover {
+    background: rgba(255, 255, 255, .07) !important;
+}
+
+.painel-figurinha-item img {
+    max-width: 100%;
+    max-height: 100%;
+    display: block;
+    object-fit: contain;
+}
+
+.painel-compositor-vazio {
+    padding: 30px 18px;
+    color: #8696a0;
+    font-size: 11px;
+    line-height: 1.5;
+    text-align: center;
+}
+
+.painel-figurinhas-vazio {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 1050px) {
+    .painel-figurinhas-compositor {
+        width: 390px;
+    }
+
+    .painel-figurinhas-grade {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+

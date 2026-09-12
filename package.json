@@ -1,0 +1,84 @@
+{
+  "name": "whatsiapp",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --check index.js && node --check whatsapp-worker.js && node --check wpp-worker.js",
+    "start": "electron .",
+    "doctor": "node scripts/diagnostico-ambiente.js",
+    "prepare:chrome": "node scripts/preparar-chrome-empacotado.js",
+    "dist:mac": "npm run prepare:chrome && electron-builder --mac --publish never",
+    "release:mac": "npm run prepare:chrome && electron-builder --mac --publish onTag",
+    "postinstall": "node scripts/aplicar-patches-whatsiapp.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/Benfic4rthur/WhatsIAPP-releases.git"
+  },
+  "description": "Assistente desktop inteligente para WhatsApp",
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.24",
+    "@wppconnect-team/wppconnect": "^2.2.6",
+    "electron-updater": "^6.8.9",
+    "ffmpeg-static": "^5.3.0",
+    "pdf-lib": "^1.17.1",
+    "pdf-parse": "1.1.1",
+    "pino": "^10.3.1",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "electron": "^32.0.0",
+    "electron-builder": "^26.15.3"
+  },
+  "productName": "WhatsIAPP",
+  "build": {
+    "appId": "com.whatsiapp.desktop",
+    "productName": "WhatsIAPP",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!dist/**/*"
+    ],
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [
+        "nsis"
+      ]
+    },
+    "mac": {
+      "icon": "assets/logo.png",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.business"
+    },
+    "dmg": {
+      "title": "WhatsIAPP",
+      "icon": "assets/logo.png",
+      "backgroundColor": "#0b0e11"
+    },
+    "asarUnpack": [
+      "**/*.node",
+      "node_modules/ffmpeg-static/**"
+    ],
+    "extraResources": [
+      {
+        "from": "build/wppconnect-chrome",
+        "to": "wppconnect-chrome"
+      }
+    ],
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "WhatsIAPP"
+    }
+  }
+}

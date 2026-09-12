@@ -1,0 +1,606 @@
+/* =========================================================
+   CATALOGO DO CLIENTE
+   Interface e status do PDF ativo nas Configuracoes do WhatsIAPP.
+   ========================================================= */
+
+
+.config-catalogo-limite {
+    margin-bottom: 13px;
+    padding: 10px 11px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border: 1px solid rgba(37, 211, 102, .18);
+    border-radius: 9px;
+    background: rgba(37, 211, 102, .055);
+}
+
+.config-catalogo-limite span {
+    color: #72d998;
+    font-size: 10px;
+    font-weight: 850;
+}
+
+.config-catalogo-limite strong {
+    color: #dfe7eb;
+    font-size: 10px;
+    font-weight: 800;
+    text-align: right;
+}
+
+.config-catalogo-card {
+    padding: 14px;
+    border: 1px solid #26343c;
+    border-radius: 12px;
+    background: #0c1418;
+}
+
+.config-catalogo-vazio,
+.config-catalogo-arquivo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.config-catalogo-vazio[hidden],
+.config-catalogo-ativo[hidden],
+.config-catalogo-btn[hidden] {
+    display: none !important;
+}
+
+.config-catalogo-vazio-icone,
+.config-catalogo-arquivo-icone {
+    flex: 0 0 46px;
+    width: 46px;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #34434b;
+    border-radius: 11px;
+    background: #162127;
+    color: #dfe7eb;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: .45px;
+}
+
+.config-catalogo-vazio-icone {
+    color: #71838d;
+}
+
+.config-catalogo-vazio-texto,
+.config-catalogo-arquivo-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.config-catalogo-vazio-texto strong,
+.config-catalogo-vazio-texto span,
+.config-catalogo-arquivo-info strong,
+.config-catalogo-arquivo-info span {
+    display: block;
+}
+
+.config-catalogo-vazio-texto strong,
+.config-catalogo-arquivo-info strong {
+    overflow: hidden;
+    color: #e9edef;
+    font-size: 12px;
+    font-weight: 850;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.config-catalogo-vazio-texto span,
+.config-catalogo-arquivo-info span {
+    margin-top: 4px;
+    color: #71838d;
+    font-size: 10px;
+    line-height: 1.4;
+}
+
+.config-catalogo-arquivo-info span {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.config-catalogo-status {
+    flex: 0 0 auto;
+    max-width: 135px;
+    padding: 5px 8px;
+    border: 1px solid rgba(216, 179, 93, .26);
+    border-radius: 999px;
+    background: rgba(216, 179, 93, .08);
+    color: #d8b35d;
+    font-size: 9px;
+    font-weight: 850;
+    line-height: 1.25;
+    text-align: center;
+}
+
+.config-catalogo-status.status-processado {
+    border-color: rgba(37, 211, 102, .25);
+    background: rgba(37, 211, 102, .08);
+    color: #62d78b;
+}
+
+.config-catalogo-status.status-processando {
+    border-color: rgba(90, 160, 220, .25);
+    background: rgba(90, 160, 220, .08);
+    color: #82b9e4;
+}
+
+.config-catalogo-status.status-erro {
+    border-color: rgba(239, 83, 80, .28);
+    background: rgba(239, 83, 80, .08);
+    color: #ff7774;
+}
+
+.config-catalogo-status.status-fora_limite_plano {
+    border-color: rgba(239, 83, 80, .34);
+    background: rgba(239, 83, 80, .10);
+    color: #ff8582;
+}
+
+.config-catalogo-acoes {
+    margin-top: 13px;
+    display: flex;
+    gap: 8px;
+}
+
+.config-catalogo-btn {
+    width: auto !important;
+    min-width: 112px;
+    height: 38px;
+    margin: 0 !important;
+    padding: 0 14px !important;
+    border-radius: 10px !important;
+    font: inherit;
+    font-size: 11px !important;
+    font-weight: 850;
+}
+
+.config-catalogo-btn.primario {
+    border: 0 !important;
+    background: var(--verde2) !important;
+    color: white !important;
+}
+
+.config-catalogo-btn.perigo {
+    border: 1px solid rgba(239, 83, 80, .34) !important;
+    background: rgba(239, 83, 80, .08) !important;
+    color: #ff8582 !important;
+}
+
+.config-catalogo-btn.perigo:hover {
+    background: rgba(239, 83, 80, .14) !important;
+}
+
+.config-catalogo-btn:disabled {
+    opacity: .45;
+    cursor: default;
+}
+
+.config-catalogo-mensagem {
+    min-height: 17px;
+    margin-top: 9px;
+    color: #71838d;
+    font-size: 10px;
+    line-height: 1.4;
+}
+
+.config-catalogo-mensagem.ok {
+    color: #62d78b;
+}
+
+.config-catalogo-mensagem.erro {
+    color: #ff7774;
+}
+
+.config-catalogo-mensagem.alerta {
+    color: #d8b35d;
+}
+
+
+.config-catalogo-busca {
+    margin-top: 13px;
+    padding-top: 13px;
+    border-top: 1px solid #26343c;
+}
+
+.config-catalogo-busca[hidden],
+.config-catalogo-busca-resultados[hidden] {
+    display: none !important;
+}
+
+.config-catalogo-busca-cabecalho strong,
+.config-catalogo-busca-cabecalho span {
+    display: block;
+}
+
+.config-catalogo-busca-cabecalho strong {
+    color: #dfe7eb;
+    font-size: 11px;
+    font-weight: 850;
+}
+
+.config-catalogo-busca-cabecalho span {
+    margin-top: 3px;
+    color: #71838d;
+    font-size: 9.5px;
+    line-height: 1.4;
+}
+
+.config-catalogo-busca-linha {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+}
+
+.config-catalogo-busca-linha input {
+    flex: 1;
+    min-width: 0;
+    height: 38px;
+    padding: 0 11px;
+    border: 1px solid #2b3a42;
+    border-radius: 10px;
+    outline: none;
+    background: #101a1f;
+    color: #e9edef;
+    font: inherit;
+    font-size: 10.5px;
+}
+
+.config-catalogo-busca-linha input:focus {
+    border-color: rgba(37, 211, 102, .48);
+}
+
+.config-catalogo-busca-linha input::placeholder {
+    color: #61717a;
+}
+
+.config-catalogo-busca-linha .config-catalogo-btn {
+    min-width: 78px;
+    border: 1px solid rgba(37, 211, 102, .30) !important;
+    background: rgba(37, 211, 102, .08) !important;
+    color: #72d998 !important;
+}
+
+.config-catalogo-busca-status {
+    min-height: 15px;
+    margin-top: 8px;
+    color: #71838d;
+    font-size: 9.5px;
+    line-height: 1.4;
+}
+
+.config-catalogo-busca-status.ok {
+    color: #62d78b;
+}
+
+.config-catalogo-busca-status.erro {
+    color: #ff7774;
+}
+
+.config-catalogo-busca-status.vazio {
+    color: #d8b35d;
+}
+
+.config-catalogo-busca-resultados {
+    margin-top: 7px;
+    display: grid;
+    gap: 7px;
+}
+
+.config-catalogo-busca-resultado {
+    padding: 9px 10px;
+    border: 1px solid #26343c;
+    border-radius: 9px;
+    background: #101a1f;
+}
+
+.config-catalogo-busca-resultado-topo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.config-catalogo-busca-resultado-topo strong {
+    color: #9fb0b9;
+    font-size: 9px;
+    font-weight: 850;
+}
+
+.config-catalogo-busca-resultado-topo span {
+    color: #62d78b;
+    font-size: 9px;
+    font-weight: 800;
+}
+
+.config-catalogo-busca-resultado-texto {
+    max-height: 118px;
+    margin-top: 6px;
+    overflow: auto;
+    color: #c7d0d5;
+    font-size: 9.5px;
+    line-height: 1.48;
+    white-space: pre-wrap;
+}
+
+@media (max-width: 560px) {
+    .config-catalogo-arquivo {
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .config-catalogo-status {
+        margin-left: 58px;
+    }
+
+    .config-catalogo-acoes {
+        flex-direction: column;
+    }
+
+    .config-catalogo-btn {
+        width: 100% !important;
+    }
+
+    .config-catalogo-busca-linha {
+        flex-direction: column;
+    }
+
+    .config-catalogo-busca-linha .config-catalogo-btn {
+        width: 100% !important;
+    }
+}
+
+/* =========================================================
+   CONFIGURACOES COMPACTAS
+   O painel lateral principal vira apenas um resumo sem rolagem.
+   Consumo e Catalogo abrem em paineis secundarios dedicados.
+   ========================================================= */
+
+#painelConfiguracoesApp {
+    max-height: calc(100vh - 82px);
+    overflow: hidden;
+}
+
+.config-app-corpo-compacto {
+    padding: 16px 18px 18px;
+}
+
+.config-app-lista-atalhos {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.config-app-lista-atalhos .config-ia-atalho {
+    min-height: 58px;
+    margin: 0 !important;
+    padding: 11px 13px !important;
+}
+
+.config-app-divisor-compacto {
+    margin: 15px 0 13px;
+}
+
+#resumoConfiguracoesIA,
+#resumoConsumoIA,
+#resumoCatalogoConfig,
+#statusSenhaTrancadasConfig {
+    min-height: 0;
+    margin: 0;
+    color: #8fa1aa;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.35;
+}
+
+#trocarSenhaTrancadasConfig.config-ia-atalho {
+    width: 100% !important;
+    min-height: 58px;
+    margin: 0 !important;
+    padding: 11px 13px !important;
+    border: 1px solid #2b3a42;
+    border-radius: 12px;
+    background: #111a1f;
+    color: #e9edef;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    text-align: left;
+    box-sizing: border-box;
+}
+
+#trocarSenhaTrancadasConfig.config-ia-atalho:hover {
+    background: #162127;
+    border-color: #36505d;
+}
+
+.overlay-config-secundaria {
+    position: fixed;
+    inset: 0;
+    z-index: 120160;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    box-sizing: border-box;
+    background: rgba(0, 0, 0, .72);
+}
+
+.overlay-config-secundaria.aberto {
+    display: flex;
+}
+
+.painel-config-secundaria {
+    width: 760px;
+    max-width: calc(100vw - 48px);
+    max-height: calc(100vh - 48px);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #2b3941;
+    border-radius: 16px;
+    background: #10181c;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, .62);
+    color: #e9edef;
+}
+
+.painel-config-catalogo {
+    width: 720px;
+}
+
+.config-secundaria-topo {
+    padding: 16px 18px;
+    border-bottom: 1px solid #202b31;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.config-secundaria-titulo {
+    font-size: 17px;
+    font-weight: 800;
+}
+
+.config-secundaria-subtitulo {
+    margin-top: 3px;
+    color: #8fa1aa;
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.config-secundaria-fechar {
+    flex: 0 0 32px;
+    width: 32px !important;
+    height: 32px;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0;
+    border-radius: 9px;
+    background: #182329;
+    color: #b8c5cb;
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+}
+
+.config-secundaria-fechar:hover {
+    background: #223039;
+    color: #fff;
+}
+
+.config-secundaria-corpo {
+    min-height: 0;
+    padding: 18px;
+    overflow: auto;
+}
+
+#overlayConsumoIA .config-uso-ia,
+#overlayCatalogoConfig .config-catalogo-card {
+    margin: 0;
+}
+
+.config-secundaria-corpo {
+    scrollbar-width: thin;
+    scrollbar-color: #34444c #0d1519;
+}
+
+.config-secundaria-corpo::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.config-secundaria-corpo::-webkit-scrollbar-track {
+    background: #0d1519;
+}
+
+.config-secundaria-corpo::-webkit-scrollbar-thumb {
+    min-height: 36px;
+    border: 2px solid #0d1519;
+    border-radius: 999px;
+    background: #34444c;
+}
+
+.config-secundaria-corpo::-webkit-scrollbar-thumb:hover {
+    background: #465a64;
+}
+
+.config-secundaria-corpo::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+@media (max-height: 620px) {
+    .config-app-topo {
+        padding-top: 13px;
+        padding-bottom: 12px;
+    }
+
+    .config-app-corpo-compacto {
+        padding-top: 12px;
+        padding-bottom: 14px;
+    }
+
+    .config-app-lista-atalhos .config-ia-atalho,
+    #trocarSenhaTrancadasConfig.config-ia-atalho {
+        min-height: 52px;
+        padding-top: 9px !important;
+        padding-bottom: 9px !important;
+    }
+
+    .config-app-divisor-compacto {
+        margin-top: 11px;
+        margin-bottom: 10px;
+    }
+}
+
+
+/* =========================================================
+   CONFIGURACOES PRINCIPAIS - AJUSTE DE DISPOSICAO
+   Consumo permanece aberto no painel principal.
+   Catalogo segue compacto e Privacidade recupera descricao.
+   ========================================================= */
+
+.config-app-corpo-compacto .config-uso-ia {
+    margin-top: 8px;
+}
+
+.config-app-secao-desc-compacta {
+    margin: 0 0 8px;
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+#trocarSenhaTrancadasConfig .config-ia-atalho-titulo {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+@media (max-height: 760px) {
+    .config-app-corpo-compacto {
+        padding-top: 12px;
+        padding-bottom: 12px;
+    }
+
+    .config-app-corpo-compacto .config-uso-ia {
+        margin-top: 6px;
+    }
+
+    .config-app-divisor-compacto {
+        margin-top: 10px;
+        margin-bottom: 9px;
+    }
+}
+

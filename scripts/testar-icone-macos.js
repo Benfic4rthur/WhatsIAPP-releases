@@ -1,0 +1,10 @@
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const index = fs.readFileSync(path.join(__dirname, "..", "index.js"), "utf8");
+const pacote = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "package.json"), "utf8"));
+assert.match(index, /process\.platform !== "darwin"/);
+assert.match(index, /app\.dock\.setIcon\(imagem\)/);
+assert.equal(pacote.build.mac.icon, "assets/logo.png");
+assert.ok(fs.statSync(path.join(__dirname, "..", "assets", "logo.png")).size > 100);
+console.log("OK: ícone da Dock do macOS configurado para o logo do WhatsIAPP.");

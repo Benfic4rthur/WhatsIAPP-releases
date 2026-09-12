@@ -1,0 +1,11 @@
+TESTADOR MESTRE WHATSIAPP
+Versao: 1.3.3.2-hotfix-esperar
+
+CORRECAO
+- Corrigido somente o helper interno esperar() usado por TM-P013 e TM-P016.
+- TM-P013 falhava com "esperar is not defined".
+- TM-P016 teria a mesma falha no perfil Completo Real.
+- Nenhum arquivo funcional do WhatsIAPP foi alterado.
+- Nenhum contrato funcional foi alterado.
+- Nenhum teste antigo foi alterado.
+- node --check: OK.

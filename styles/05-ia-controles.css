@@ -1,0 +1,251 @@
+/* =========================================================
+   IA - SEGUNDO PLANO POR CONVERSA
+   Nesta versao, apenas controle visual + persistencia.
+   ========================================================= */
+
+.ia-segundo-plano-toggle {
+    width: auto !important;
+    min-width: 126px;
+    height: 34px;
+    margin: 0 0 0 5px !important;
+    padding: 0 10px !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    border: 1px solid var(--borda) !important;
+    border-radius: 9px !important;
+    background: var(--painel2) !important;
+    color: var(--texto2) !important;
+    font-size: 11px !important;
+    font-weight: 700;
+    white-space: nowrap;
+    transition:
+        border-color .15s ease,
+        background .15s ease,
+        color .15s ease,
+        opacity .15s ease;
+}
+
+.ia-segundo-plano-toggle:hover:not(:disabled) {
+    border-color: #405159 !important;
+    color: var(--texto) !important;
+}
+
+.ia-segundo-plano-toggle.ativo {
+    border-color: var(--verde2) !important;
+    background: rgba(37, 211, 102, .12) !important;
+    color: white !important;
+}
+
+.ia-segundo-plano-toggle:disabled {
+    opacity: .40;
+    cursor: default;
+}
+
+.ia-segundo-plano-indicador {
+    min-width: 28px;
+    padding: 2px 5px;
+    border-radius: 999px;
+    background: #263238;
+    color: #8fa0a8;
+    font-size: 9px;
+    font-weight: 900;
+    line-height: 1.2;
+    text-align: center;
+}
+
+.ia-segundo-plano-toggle.ativo .ia-segundo-plano-indicador {
+    background: var(--verde2);
+    color: white;
+}
+
+.ia-segundo-plano-texto {
+    line-height: 1;
+}
+
+
+/* =========================================================
+   CONFIGURACOES DE IA - PESQUISA WEB GLOBAL
+   ========================================================= */
+
+.config-web-toggle {
+    min-height: 72px;
+    padding: 13px 14px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border: 1px solid #2a3942;
+    border-radius: 12px;
+    background: #152026;
+    cursor: pointer;
+    user-select: none;
+}
+
+.config-web-toggle:hover {
+    border-color: #3a4d56;
+    background: #18242a;
+}
+
+.config-web-toggle-texto {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.config-web-toggle-texto strong {
+    color: #e9edef;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.config-web-toggle-texto span {
+    color: #8696a0;
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.config-web-toggle input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.config-web-toggle-switch {
+    position: relative;
+    flex: 0 0 46px;
+    width: 46px;
+    height: 25px;
+    border: 1px solid #405058;
+    border-radius: 999px;
+    background: #263238;
+    transition:
+        background .16s ease,
+        border-color .16s ease;
+}
+
+.config-web-toggle-switch::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    background: #8fa0a8;
+    transition:
+        transform .16s cubic-bezier(.2, .85, .25, 1),
+        background .16s ease;
+}
+
+.config-web-toggle input:checked+.config-web-toggle-switch {
+    border-color: var(--verde2);
+    background: rgba(37, 211, 102, .22);
+}
+
+.config-web-toggle input:checked+.config-web-toggle-switch::after {
+    transform: translateX(21px);
+    background: var(--verde);
+}
+
+.config-web-toggle input:focus-visible+.config-web-toggle-switch {
+    outline: 2px solid rgba(37, 211, 102, .35);
+    outline-offset: 2px;
+}
+
+/* =========================================================
+   IA - ESTADO CONTEXTUAL DA CONVERSA
+   Sem conversa: controles ocultos.
+   Manual/Automatico: status compacto sobre o chat.
+   Assistido: usa o painel lateral completo.
+   ========================================================= */
+
+.modos {
+    transition:
+        opacity .16s ease,
+        transform .16s ease,
+        visibility .16s ease;
+}
+
+body:not(.whatsiapp-conversa-ativa) .modos {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(-4px);
+}
+
+.ia-status-compacto {
+    position: absolute;
+    z-index: 12;
+    top: 74px;
+    right: 18px;
+    max-width: min(390px, calc(100% - 36px));
+    padding: 9px 12px 9px 30px;
+    border: 1px solid rgba(134, 150, 160, .16);
+    border-radius: 11px;
+    background: rgba(24, 34, 41, .94);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, .22);
+    color: #aebac1;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.4;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(-6px) scale(.985);
+    transform-origin: top right;
+    transition:
+        opacity .16s ease,
+        transform .18s cubic-bezier(.2, .85, .25, 1),
+        visibility .16s ease,
+        border-color .16s ease;
+}
+
+.ia-status-compacto::before {
+    content: "";
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #00a884;
+    transform: translateY(-50%);
+    box-shadow: 0 0 0 3px rgba(0, 168, 132, .12);
+}
+
+body.whatsiapp-conversa-ativa:not(.whatsiapp-modo-assistido) .ia-status-compacto {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+}
+
+.ia-status-compacto.ia-gerando::before {
+    animation: iaStatusCompactoPulse 1.15s ease-in-out infinite;
+}
+
+.ia-status-compacto.ia-erro {
+    border-color: rgba(255, 107, 107, .28);
+    color: #f4b4b4;
+}
+
+.ia-status-compacto.ia-erro::before {
+    background: #ff6b6b;
+    box-shadow: 0 0 0 3px rgba(255, 107, 107, .12);
+}
+
+@keyframes iaStatusCompactoPulse {
+
+    0%,
+    100% {
+        opacity: .55;
+        transform: translateY(-50%) scale(.85);
+    }
+
+    50% {
+        opacity: 1;
+        transform: translateY(-50%) scale(1.15);
+    }
+}

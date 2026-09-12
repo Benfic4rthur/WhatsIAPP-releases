@@ -1,0 +1,20 @@
+TESTADOR MESTRE WHATSIAPP
+Versao: 1.3.4-relatorio-interno
+
+ALTERACAO
+- O relatorio final agora abre automaticamente em um modal interno.
+- Visual inspirado no relatorio do Teste de Integridade da IA.
+- Mantem o relatorio completo em area rolavel.
+- Adiciona botoes: Copiar relatorio, Abrir arquivo salvo e Fechar.
+- O botao existente Abrir relatorio agora reabre o modal interno.
+- O arquivo continua sendo salvo normalmente no diretorio do Testador Mestre.
+- Nenhum arquivo funcional do WhatsIAPP foi alterado.
+- Nenhuma logica de teste foi alterada.
+- Nenhuma regra de PASS/WARNING/FAIL/SKIP foi alterada.
+
+ARQUIVOS AJUSTADOS
+- testador-mestre/ui.js
+- testador-mestre/index.js
+
+VALIDACAO
+- node --check nos dois arquivos: OK.

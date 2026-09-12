@@ -1,0 +1,221 @@
+/* =========================================================
+   SINCRONIZACAO INICIAL
+   O overlay so sai quando o WPPConnect confirma FULL_READY.
+   ========================================================= */
+
+.sincronizacao-inicial-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background:
+        radial-gradient(circle at 50% 42%, rgba(37, 211, 102, .08), transparent 30%),
+        rgba(6, 10, 12, .94);
+    backdrop-filter: blur(7px);
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition:
+        opacity 420ms ease,
+        visibility 420ms ease,
+        backdrop-filter 420ms ease;
+}
+
+.sincronizacao-inicial-overlay.saindo {
+    opacity: 0;
+    visibility: hidden;
+    backdrop-filter: blur(0);
+    pointer-events: none;
+}
+
+.sincronizacao-inicial-card {
+    width: min(760px, calc(100vw - 44px));
+    padding: 30px 30px 25px;
+    border: 1px solid rgba(255, 255, 255, .07);
+    border-radius: 20px;
+    background: rgba(16, 24, 28, .96);
+    box-shadow: 0 28px 90px rgba(0, 0, 0, .52);
+    text-align: center;
+    transform: translateY(0) scale(1);
+    transition:
+        transform 420ms cubic-bezier(.2, .85, .25, 1),
+        border-color 260ms ease,
+        box-shadow 260ms ease;
+}
+
+.sincronizacao-inicial-overlay.saindo .sincronizacao-inicial-card {
+    transform: translateY(7px) scale(.982);
+}
+
+.sincronizacao-inicial-overlay.pronto .sincronizacao-inicial-card {
+    border-color: rgba(37, 211, 102, .28);
+    box-shadow:
+        0 28px 90px rgba(0, 0, 0, .52),
+        0 0 36px rgba(37, 211, 102, .07);
+}
+
+.sincronizacao-inicial-logo-wrap {
+    position: relative;
+    width: 82px;
+    height: 82px;
+    margin: 0 auto 18px;
+}
+
+.sincronizacao-inicial-logo {
+    position: absolute;
+    inset: 13px;
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+    border-radius: 15px;
+    z-index: 2;
+}
+
+.sincronizacao-inicial-spinner {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    animation: sincronizacao-girar 1.8s linear infinite;
+}
+
+.sincronizacao-inicial-spinner span {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--verde);
+    box-shadow: 0 0 14px rgba(37, 211, 102, .48);
+}
+
+.sincronizacao-inicial-spinner span:nth-child(1) {
+    left: 37px;
+    top: 0;
+}
+
+.sincronizacao-inicial-spinner span:nth-child(2) {
+    right: 5px;
+    bottom: 14px;
+    opacity: .62;
+}
+
+.sincronizacao-inicial-spinner span:nth-child(3) {
+    left: 5px;
+    bottom: 14px;
+    opacity: .34;
+}
+
+.sincronizacao-inicial-overlay.pronto .sincronizacao-inicial-spinner {
+    animation-duration: .8s;
+}
+
+.sincronizacao-inicial-overlay.erro .sincronizacao-inicial-spinner span {
+    background: var(--vermelho);
+    box-shadow: 0 0 14px rgba(239, 83, 80, .42);
+}
+
+@keyframes sincronizacao-girar {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.sincronizacao-inicial-titulo {
+    margin-bottom: 9px;
+    color: #f3f7f8;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -.2px;
+}
+
+.sincronizacao-inicial-mensagem {
+    min-height: 24px;
+    color: #d4dee2;
+    white-space: nowrap;
+    font-size: 14px;
+    font-weight: 650;
+    line-height: 1.5;
+    opacity: 1;
+    transform: translateY(0);
+    transition:
+        opacity 90ms ease,
+        transform 90ms ease;
+}
+
+.sincronizacao-inicial-detalhe {
+    min-height: 18px;
+    margin-top: 10px;
+    color: #71838d;
+    font-size: 11px;
+    line-height: 1.45;
+    opacity: 1;
+    transform: translateY(0);
+    transition:
+        opacity 90ms ease,
+        transform 90ms ease;
+}
+
+.sincronizacao-inicial-mensagem.trocando,
+.sincronizacao-inicial-detalhe.trocando {
+    opacity: 0;
+    transform: translateY(3px);
+}
+
+.sincronizacao-inicial-overlay.pronto .sincronizacao-inicial-mensagem {
+    color: #62db8c;
+}
+
+.sincronizacao-inicial-marcos {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 7px;
+    margin-top: 22px;
+}
+
+.sincronizacao-inicial-marco {
+    min-width: 0;
+    height: 34px;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: 1px solid #28363e;
+    border-radius: 9px;
+    background: #121c21;
+    color: #71838d;
+    font-size: 10px;
+    font-weight: 700;
+    transition:
+        border-color 220ms ease,
+        background 220ms ease,
+        color 220ms ease,
+        transform 220ms cubic-bezier(.2, .85, .25, 1);
+}
+
+.sincronizacao-inicial-marco span {
+    width: 6px;
+    height: 6px;
+    flex: 0 0 6px;
+    border-radius: 50%;
+    background: #53636b;
+    transition:
+        background 220ms ease,
+        box-shadow 220ms ease;
+}
+
+.sincronizacao-inicial-marco.concluido {
+    border-color: rgba(37, 211, 102, .24);
+    background: rgba(37, 211, 102, .075);
+    color: #b9c9cf;
+    transform: translateY(-1px);
+}
+
+.sincronizacao-inicial-marco.concluido span {
+    background: var(--verde);
+    box-shadow: 0 0 9px rgba(37, 211, 102, .42);
+}
+
+

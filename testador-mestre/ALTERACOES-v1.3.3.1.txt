@@ -1,0 +1,11 @@
+TESTADOR MESTRE WHATSIAPP
+Versao: 1.3.3.1-hotfix-l006
+
+CORRECAO
+- Corrigido somente o contrato TM-L006.
+- O teste antigo procurava uma forma textual anterior do fallback de midia.
+- O index atual usa ehMidiaConhecida + possuiIdHistoricoWpp + erroSemMetadados.
+- O novo teste valida a logica atual e tambem a persistencia registrar-midia-recuperada.
+- Nenhum arquivo funcional do WhatsIAPP foi alterado.
+- Nenhum outro teste foi alterado.
+- node --check: OK.

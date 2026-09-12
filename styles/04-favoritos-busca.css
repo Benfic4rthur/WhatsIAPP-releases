@@ -1,0 +1,187 @@
+/* =========================================================
+   FAVORITOS DE MENSAGENS
+   ========================================================= */
+
+.favorito-item {
+    width: 100% !important;
+    min-width: 0;
+    margin: 0 0 6px !important;
+    padding: 11px 12px !important;
+    display: block !important;
+    border: 1px solid transparent !important;
+    border-radius: 10px !important;
+    background: transparent !important;
+    color: var(--texto) !important;
+    text-align: left !important;
+    transition:
+        background .15s ease,
+        border-color .15s ease,
+        transform .15s ease;
+}
+
+.favorito-item:hover {
+    border-color: rgba(255, 209, 102, .16) !important;
+    background: var(--painel2) !important;
+    transform: translateY(-1px);
+}
+
+.favorito-item-topo {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.favorito-item-nome {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    color: #e9edef;
+    font-size: 13px;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.favorito-item-estrela {
+    flex: 0 0 auto;
+    color: #ffd166;
+    font-size: 14px;
+    line-height: 1;
+}
+
+.favorito-item-preview {
+    margin-top: 5px;
+    overflow: hidden;
+    color: #b6c2c8;
+    font-size: 12px;
+    line-height: 1.4;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.favorito-item-meta {
+    margin-top: 5px;
+    color: #71838d;
+    font-size: 10px;
+    line-height: 1.3;
+}
+
+#abaFavoritos.ativa {
+    border-color: #c99d35;
+    background: rgba(255, 209, 102, .10);
+    color: #ffe3a0;
+}
+
+
+/* =========================================================
+   BUSCA EM CONVERSAS E MENSAGENS
+   ========================================================= */
+
+.resultado-busca-secao {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    min-height: 34px;
+    padding: 8px 8px 7px;
+    margin: 2px 0 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, .05);
+    background: var(--painel);
+    color: #9fb0b8;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .35px;
+}
+
+.resultado-busca-contagem {
+    flex: 0 0 auto;
+    min-width: 24px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: #1c282e;
+    color: #aebdc4;
+    font-size: 10px;
+    text-align: center;
+}
+
+.resultado-busca-conversa {
+    margin-bottom: 4px;
+}
+
+.resultado-busca-mensagem {
+    width: 100% !important;
+    min-width: 0;
+    margin: 0 0 4px !important;
+    padding: 10px 11px !important;
+    display: block !important;
+    border: 1px solid transparent !important;
+    border-radius: 10px !important;
+    background: transparent !important;
+    color: var(--texto) !important;
+    text-align: left !important;
+    transition:
+        background .14s ease,
+        border-color .14s ease,
+        transform .14s ease;
+}
+
+.resultado-busca-mensagem:hover {
+    border-color: rgba(37, 211, 102, .14) !important;
+    background: var(--painel2) !important;
+    transform: translateY(-1px);
+}
+
+.resultado-busca-topo {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.resultado-busca-nome {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    color: #e8eef1;
+    font-size: 12px;
+    font-weight: 750;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.resultado-busca-horario {
+    flex: 0 0 auto;
+    color: #6f818a;
+    font-size: 10px;
+}
+
+.resultado-busca-preview {
+    margin-top: 4px;
+    overflow: hidden;
+    color: #b7c4ca;
+    font-size: 12px;
+    line-height: 1.38;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.resultado-busca-meta {
+    margin-top: 4px;
+    color: #71838d;
+    font-size: 10px;
+    line-height: 1.2;
+}
+
+.resultado-busca-limite {
+    padding: 10px 8px 14px;
+    color: #71838d;
+    font-size: 10px;
+    line-height: 1.35;
+    text-align: center;
+}
+
