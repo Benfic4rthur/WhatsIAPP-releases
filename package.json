@@ -1,6 +1,6 @@
 {
   "name": "whatsiapp",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "main": "index.js",
   "scripts": {
     "test": "node --check index.js && node --check whatsapp-worker.js && node --check wpp-worker.js",

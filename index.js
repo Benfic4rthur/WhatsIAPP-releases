@@ -1667,6 +1667,17 @@ function registrarWorker(worker, tipoWorker) {
         return;
       }
 
+      if (tipoWorker === "wpp" && mensagem.evento === "wpp-qr-read") {
+        // Confirmação explícita do WPPConnect: agora podemos remover o QR
+        // dele sem confundir sincronização com autenticação.
+        atualizarQrConexao("wpp", null);
+        enviarParaTela("status", {
+          texto: "Módulo de Arquivadas conectado",
+          tipo: "conectando",
+        });
+        return;
+      }
+
       if (tipoWorker === "wpp" && mensagem.evento === "wpp-ready") {
         registrarMarcoInicializacao("wpp", "wpp-ready");
 

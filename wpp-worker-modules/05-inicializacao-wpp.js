@@ -411,6 +411,7 @@ async function iniciar() {
         // syncing/inchat podem chegar antes da leitura e não podem esconder
         // o QR que o usuário ainda precisa escanear.
         qrAguardandoLeitura = false;
+        enviar("wpp-qr-read", { status: statusNormalizado });
         confirmarAutenticacaoWpp(statusNormalizado);
       } else if (
         statusNormalizado === "inchat" ||

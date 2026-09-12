@@ -724,6 +724,12 @@ function criarModuloEventosWhatsapp(deps = {}) {
       botaoPerfilApp.title = String(
         dados.texto || "Conecte o módulo do WhatsApp",
       );
+      const tituloQr = document.getElementById("qrTitulo");
+      if (tituloQr) {
+        tituloQr.textContent = String(dados.texto || "").toLowerCase().includes("arquivadas")
+          ? "Conectar módulo de Arquivadas"
+          : "Conectar WhatsApp";
+      }
     } else if (sincronizacaoBackgroundCompleta) {
       botaoPerfilApp.classList.add("status-conectado");
       botaoPerfilApp.title = "WhatsIAPP sincronizado";
