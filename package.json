@@ -18,6 +18,11 @@
     "type": "git",
     "url": "git+ssh://git@github.com/Benfic4rthur/WhatsIAPP-releases.git"
   },
+  "publish": {
+    "provider": "github",
+    "owner": "Benfic4rthur",
+    "repo": "WhatsIAPP-releases"
+  },
   "description": "Assistente desktop inteligente para WhatsApp",
   "dependencies": {
     "@whiskeysockets/baileys": "^6.7.24",
