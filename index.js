@@ -38,10 +38,28 @@ let encerramentoAppConcluido = false;
 let sequenciaSolicitacao = 0;
 let telaPronta = false;
 const qrsPendentes = { baileys: null, wpp: null };
+let qrOrigemAtiva = null;
 
 function atualizarQrConexao(origem, imagem) {
   qrsPendentes[origem] = imagem || null;
-  enviarParaTela("qr", qrsPendentes.baileys || qrsPendentes.wpp);
+
+  if (imagem) {
+    // O QR mais recente é o que precisa estar visível. Isso evita que o QR
+    // do Baileys esconda o segundo QR do WPPConnect durante a autenticação.
+    qrOrigemAtiva = origem;
+  } else if (qrOrigemAtiva === origem) {
+    qrOrigemAtiva = qrsPendentes.baileys
+      ? "baileys"
+      : qrsPendentes.wpp
+        ? "wpp"
+        : null;
+  }
+
+  const qrAtual = qrOrigemAtiva
+    ? qrsPendentes[qrOrigemAtiva]
+    : qrsPendentes.baileys || qrsPendentes.wpp;
+
+  enviarParaTela("qr", qrAtual);
 }
 const eventosTelaPendentes = [];
 
