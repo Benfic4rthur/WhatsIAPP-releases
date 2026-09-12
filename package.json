@@ -6,10 +6,11 @@
     "test": "node --check index.js && node --check whatsapp-worker.js && node --check wpp-worker.js",
     "start": "electron .",
     "doctor": "node scripts/diagnostico-ambiente.js",
+    "clean:dist": "node scripts/limpar-dist-local.js",
     "prepare:icon": "node scripts/preparar-icone-macos.js assets/logo.png assets/logo-macos.png",
     "prepare:chrome": "node scripts/preparar-chrome-empacotado.js",
-    "dist:mac": "npm run prepare:icon && npm run prepare:chrome && electron-builder --mac --publish never",
-    "release:mac": "npm run prepare:icon && npm run prepare:chrome && electron-builder --mac --publish onTag",
+    "dist:mac": "npm run clean:dist && npm run prepare:icon && npm run prepare:chrome && electron-builder --mac --publish never",
+    "release:mac": "npm run clean:dist && npm run prepare:icon && npm run prepare:chrome && electron-builder --mac --publish onTag",
     "postinstall": "node scripts/aplicar-patches-whatsiapp.js"
   },
   "keywords": [],

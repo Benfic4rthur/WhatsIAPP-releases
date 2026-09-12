@@ -35,8 +35,8 @@ jobs:
       - name: Prepare macOS icon
         run: npm run prepare:icon
 
-      - name: Remove invalid release v1.0.2
-        if: github.ref == 'refs/tags/v1.0.5'
+      - name: Keep only the current GitHub release
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: actions/github-script@v7
         with:
           script: |
@@ -45,15 +45,29 @@ jobs:
               repo: context.repo.repo,
               per_page: 100
             });
-            const invalidTags = new Set(['v1.0.2', 'v1.0.3', 'v1.0.4']);
-            const invalid = releases.filter((release) => invalidTags.has(release.tag_name));
-            for (const release of invalid) {
+            const currentTag = context.ref.replace('refs/tags/', '');
+            const previous = releases.filter((release) => release.tag_name !== currentTag);
+            for (const release of previous) {
               await github.rest.repos.deleteRelease({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 release_id: release.id
               });
               core.info(`Release ${release.tag_name} removida.`);
+            }
+
+            const tags = await github.paginate(github.rest.repos.listTags, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100
+            });
+            for (const tag of tags.filter((entry) => entry.name !== currentTag)) {
+              await github.rest.git.deleteRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `tags/${tag.name}`
+              });
+              core.info(`Tag ${tag.name} removida.`);
             }
 
       - name: Build macOS release files
