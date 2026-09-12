@@ -602,7 +602,7 @@ function executarGroqNaoFaturavel(origem, callback, canalApi = "motor") {
 }
 
 function caminhoLogoPng() {
-  return path.join(__dirname, "assets", "logo.png");
+  return path.join(__dirname, "assets", "logo-macos.png");
 }
 
 function caminhoLogoIco() {
@@ -620,7 +620,7 @@ function configurarIconeMacOS() {
     const imagem = nativeImage.createFromPath(caminho);
 
     if (imagem.isEmpty()) {
-      console.warn("Dock icon setup skipped: logo.png is empty.");
+      console.warn("Dock icon setup skipped: logo-macos.png is empty.");
       return;
     }
 

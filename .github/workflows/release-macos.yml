@@ -32,8 +32,11 @@ jobs:
       - name: Prepare packaged Chrome
         run: npm run prepare:chrome
 
+      - name: Prepare macOS icon
+        run: npm run prepare:icon
+
       - name: Remove invalid release v1.0.2
-        if: github.ref == 'refs/tags/v1.0.3'
+        if: github.ref == 'refs/tags/v1.0.4'
         uses: actions/github-script@v7
         with:
           script: |
@@ -42,16 +45,15 @@ jobs:
               repo: context.repo.repo,
               per_page: 100
             });
-            const invalid = releases.find((release) => release.tag_name === 'v1.0.2');
-            if (invalid) {
+            const invalidTags = new Set(['v1.0.2', 'v1.0.3']);
+            const invalid = releases.filter((release) => invalidTags.has(release.tag_name));
+            for (const release of invalid) {
               await github.rest.repos.deleteRelease({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                release_id: invalid.id
+                release_id: release.id
               });
-              core.info('Release v1.0.2 removida.');
-            } else {
-              core.info('Release v1.0.2 já não existe.');
+              core.info(`Release ${release.tag_name} removida.`);
             }
 
       - name: Build macOS release files

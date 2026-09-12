@@ -6,9 +6,10 @@
     "test": "node --check index.js && node --check whatsapp-worker.js && node --check wpp-worker.js",
     "start": "electron .",
     "doctor": "node scripts/diagnostico-ambiente.js",
+    "prepare:icon": "node scripts/preparar-icone-macos.js assets/logo.png assets/logo-macos.png",
     "prepare:chrome": "node scripts/preparar-chrome-empacotado.js",
-    "dist:mac": "npm run prepare:chrome && electron-builder --mac --publish never",
-    "release:mac": "npm run prepare:chrome && electron-builder --mac --publish onTag",
+    "dist:mac": "npm run prepare:icon && npm run prepare:chrome && electron-builder --mac --publish never",
+    "release:mac": "npm run prepare:icon && npm run prepare:chrome && electron-builder --mac --publish onTag",
     "postinstall": "node scripts/aplicar-patches-whatsiapp.js"
   },
   "keywords": [],
@@ -60,7 +61,7 @@
       ]
     },
     "mac": {
-      "icon": "assets/logo.png",
+      "icon": "assets/logo-macos.png",
       "target": [
         "dmg",
         "zip"
@@ -69,7 +70,7 @@
     },
     "dmg": {
       "title": "WhatsIAPP",
-      "icon": "assets/logo.png",
+      "icon": "assets/logo-macos.png",
       "backgroundColor": "#0b0e11"
     },
     "asarUnpack": [

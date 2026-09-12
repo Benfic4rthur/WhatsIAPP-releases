@@ -5,6 +5,6 @@ const index = fs.readFileSync(path.join(__dirname, "..", "index.js"), "utf8");
 const pacote = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "package.json"), "utf8"));
 assert.match(index, /process\.platform !== "darwin"/);
 assert.match(index, /app\.dock\.setIcon\(imagem\)/);
-assert.equal(pacote.build.mac.icon, "assets/logo.png");
-assert.ok(fs.statSync(path.join(__dirname, "..", "assets", "logo.png")).size > 100);
+assert.equal(pacote.build.mac.icon, "assets/logo-macos.png");
+assert.ok(fs.statSync(path.join(__dirname, "..", "assets", "logo-macos.png")).size > 100);
 console.log("OK: ícone da Dock do macOS configurado para o logo do WhatsIAPP.");
