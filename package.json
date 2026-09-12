@@ -47,7 +47,11 @@
     },
     "files": [
       "**/*",
-      "!dist/**/*"
+      "!dist/**/*",
+      "!tokens/**/*",
+      "!.wwebjs_auth/**/*",
+      "!.wwebjs_cache/**/*",
+      "!build/wppconnect-chrome/**/*"
     ],
     "win": {
       "icon": "assets/icon.ico",
