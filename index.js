@@ -1500,6 +1500,13 @@ function registrarWorker(worker, tipoWorker) {
 
         if (tipoWorker === "wpp" && etapaAtual === "full-ready") {
           wppFullReady = true;
+
+          // O WPPConnect pode concluir a inicializacao sem emitir novamente
+          // qrreadsuccess/isLogged depois da leitura. FULL_READY e a
+          // confirmacao definitiva de que o modulo ja esta autenticado, entao
+          // nunca deixe um QR antigo reaparecer por causa desse caminho.
+          atualizarQrConexao("wpp", null);
+
           dadosFullReadyInicialPendente = { ...dadosEtapa };
 
           // O WPP continua sendo inicializado por completo, mas fora do
@@ -1781,6 +1788,10 @@ function registrarWorker(worker, tipoWorker) {
           String(mensagem.dados?.tipo || "") === "conectado"
         ) {
           baileysProntoInicial = true;
+
+          // O status conectado do Baileys encerra a autenticacao. Limpar aqui
+          // evita manter o QR anterior na tela quando a sessao ja foi lida.
+          atualizarQrConexao("baileys", null);
 
           enviarParaTela("baileys-pronto", {
             conectado: true,
