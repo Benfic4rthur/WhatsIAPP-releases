@@ -2285,25 +2285,29 @@ function normalizarStatusEntrega(status) {
 
   const texto = String(status).toUpperCase();
 
-  if (texto.includes("PLAYED") || texto.includes("READ")) {
+  if (texto === "PLAYED" || texto === "READ") {
     return "lida";
   }
 
-  if (texto.includes("DELIVERY") || texto.includes("DELIVERED")) {
+  if (texto === "DELIVERY_ACK" || texto === "DELIVERED") {
     return "entregue";
   }
 
-  if (texto.includes("SERVER_ACK") || texto.includes("SENT")) {
+  if (texto === "SERVER_ACK" || texto === "SENT") {
     return "enviada";
   }
 
+  if (texto === "ERROR") return "erro";
+  if (texto === "PENDING") return "pendente";
+  if (!texto.trim() || typeof status === 'boolean') return null;
   const numero = Number(status);
 
   if (Number.isFinite(numero)) {
-    if (numero >= 4) return "lida";
+    if (numero === 4 || numero === 5) return "lida";
     if (numero === 3) return "entregue";
     if (numero === 2) return "enviada";
     if (numero === 1) return "pendente";
+    if (numero === 0) return "erro";
   }
 
   return null;
@@ -2311,6 +2315,7 @@ function normalizarStatusEntrega(status) {
 
 function prioridadeStatusEntrega(status) {
   const mapa = {
+    erro: 1.5,
     pendente: 1,
     enviada: 2,
     entregue: 3,
@@ -2563,7 +2568,7 @@ async function adicionarMensagem(mensagem, emitir = false, extras = {}) {
       participantAliases: identidadeParticipante.participantAliases,
       lidaPorMim: !!mensagem.key.fromMe,
       statusEntrega: mensagem.key.fromMe
-        ? normalizarStatusEntrega(mensagem.status) || "enviada"
+        ? normalizarStatusEntrega(mensagem.status)
         : null,
       resposta: respostaExtraida,
       mediaPath: null,
@@ -4833,6 +4838,9 @@ async function iniciarWhatsApp() {
       for (const item of updates || []) {
         const idMensagem = item?.key?.id;
         const receipt = item?.receipt || item?.userReceipt || null;
+        // Recibos individuais de grupos nao confirmam leitura/entrega de todos.
+        // Para o tique agregado, aguarde o ACK agregado do WhatsApp.
+        if (String(item?.key?.remoteJid || '').endsWith('@g.us') || item?.key?.fromMe === false) continue;
         const status = statusPorReceipt(receipt);
 
         if (!idMensagem || !status) {
@@ -5215,7 +5223,7 @@ function importarHistoricoNormalizadoWpp(dados = {}) {
       if (
         recebida.statusEntrega &&
         existente.minha &&
-        recebida.statusEntrega !== existente.statusEntrega
+        prioridadeStatusEntrega(recebida.statusEntrega) > prioridadeStatusEntrega(existente.statusEntrega)
       ) {
         existente.statusEntrega = recebida.statusEntrega;
         mudou = true;
@@ -5249,7 +5257,7 @@ function importarHistoricoNormalizadoWpp(dados = {}) {
       participant: normalizarJid(recebida?.participant) || null,
       lidaPorMim: !!recebida?.lidaPorMim,
       statusEntrega: recebida?.minha
-        ? recebida?.statusEntrega || "enviada"
+        ? recebida?.statusEntrega || null
         : null,
       resposta: recebida?.resposta || null,
       mediaPath: null,

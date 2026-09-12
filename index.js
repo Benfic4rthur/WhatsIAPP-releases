@@ -1658,6 +1658,11 @@ function registrarWorker(worker, tipoWorker) {
         return;
       }
 
+      if (tipoWorker === 'wpp' && mensagem.evento === 'envio-texto-estado') {
+        enviarParaTela('envio-texto-estado', mensagem.dados);
+        return;
+      }
+
       if (tipoWorker === "wpp" && mensagem.evento === "archive-state") {
         atualizarEstadoArquivamento(mensagem.dados);
         return;
@@ -9074,7 +9079,21 @@ ipcMain.handle("enviar-mensagem-texto", async (_, dados) => {
     };
   }
 
-  return solicitarAoWorker("wpp", "enviar-texto", dados, 30000);
+  if (!conversaId || !String(dados?.texto || '').trim()) {
+    return solicitarAoWorker('wpp', 'enviar-texto', dados, 30000);
+  }
+  const idLocalEnvio = `local-texto-${crypto.randomUUID()}`;
+  enviarParaTela('envio-texto-estado', {
+    conversaId, idLocalEnvio, texto: dados.texto, resposta: dados.resposta,
+    timestamp: Math.floor(Date.now() / 1000), estado: 'pendente',
+  });
+  const resultado = await solicitarAoWorker('wpp', 'enviar-texto', { ...dados, idLocalEnvio }, 30000);
+  enviarParaTela('envio-texto-estado', {
+    conversaId, idLocalEnvio, estado: resultado?.ok ? 'concluido' : 'erro',
+    idMensagem: resultado?.idMensagem, statusEntrega: resultado?.statusEntrega,
+    erro: resultado?.erro,
+  });
+  return resultado;
 });
 
 ipcMain.handle("status-uso-groq", async (_, periodo = "dia") => {

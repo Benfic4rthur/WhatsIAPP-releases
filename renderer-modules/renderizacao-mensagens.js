@@ -1,3 +1,4 @@
+const { criarIndicadorStatus } = require('../scripts/status-entrega');
 function criarModuloRenderizacaoMensagens(dependencias = {}) {
   const {
     ipcRenderer,
@@ -750,28 +751,22 @@ function criarModuloRenderizacaoMensagens(dependencias = {}) {
         horaTexto.textContent = `${indicadorFavorito}${indicadorEditada}${msg.horario || ""}`;
         hora.appendChild(horaTexto);
 
-        if (msg.minha && !msg.apagadaParaTodos && msg.tipo !== "apagada") {
-          const statusEntrega = String(msg.statusEntrega || "");
-          const status = document.createElement("span");
-          status.className = "hora-status";
-
-          if (statusEntrega === "lida") {
-            status.classList.add("hora-status-lida");
-            status.textContent = "✓✓";
-          } else if (statusEntrega === "entregue") {
-            status.classList.add("hora-status-entregue");
-            status.textContent = "✓✓";
-          } else if (statusEntrega === "enviada") {
-            status.classList.add("hora-status-enviada");
-            status.textContent = "✓";
-          } else if (statusEntrega === "pendente") {
-            status.classList.add("hora-status-pendente");
-            status.textContent = "◷";
-          }
-
-          if (status.textContent) {
-            hora.appendChild(status);
-          }
+        const status = criarIndicadorStatus(document, msg, 'mensagem-status');
+        if (status) hora.appendChild(status);
+        if (msg.envioTextoLocal && msg.statusEntrega === 'erro') {
+          const tentar = document.createElement('button');
+          tentar.type = 'button';
+          tentar.className = 'envio-tentar-novamente';
+          tentar.textContent = 'Revisar e tentar novamente';
+          tentar.title = msg.erroEnvio || 'Envio não confirmado';
+          tentar.addEventListener('click', () => {
+            const campo = document.getElementById('campoMensagem');
+            if (!campo || campo.value.trim()) return;
+            campo.value = msg.texto || '';
+            campo.dispatchEvent(new document.defaultView.Event('input', { bubbles: true }));
+            campo.focus();
+          });
+          hora.appendChild(tentar);
         }
 
         caixa.appendChild(hora);

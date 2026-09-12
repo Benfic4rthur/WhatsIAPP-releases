@@ -1579,6 +1579,14 @@ const MATRIZ_TESTADOR_MESTRE_V1 = [
     "nome": "Leitura externa em ate 3 segundos",
     "esperado": "ler no celular ou WhatsApp Web zera o WhatsIAPP em ate 3 segundos",
     "secao": "P. CONTRATOS CRITICOS DE REGRESSAO"
+  },
+  {
+    "id": "TM-P018",
+    "tipo": "AUTO",
+    "risco": "R0",
+    "nome": "Status de entrega do remetente permanece verdadeiro",
+    "esperado": "relogio, tique enviado, dois tiques entregue/lido e erro nao regridem nem inventam confirmacao",
+    "secao": "P. CONTRATOS CRITICOS DE REGRESSAO"
   }
 
 ];

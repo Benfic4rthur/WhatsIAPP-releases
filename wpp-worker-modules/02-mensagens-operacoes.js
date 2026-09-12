@@ -37,16 +37,19 @@ function extrairIdMensagemWpp(valor) {
 }
 
 function normalizarAckWpp(valor) {
+  if (valor === null || valor === undefined || valor === '') return null;
   const ack = Number(valor);
 
   if (!Number.isFinite(ack)) {
     return null;
   }
 
-  if (ack >= 3) return "lida";
+  if (ack === 3 || ack === 4 || ack === 5) return "lida";
   if (ack === 2) return "entregue";
   if (ack === 1) return "enviada";
-  return "pendente";
+  if (ack === 0) return "pendente";
+  if (Number.isInteger(ack) && ack >= -7 && ack <= -1) return "erro";
+  return null;
 }
 
 function registrarEnvioWpp(idRaw, conversaId) {
@@ -59,7 +62,7 @@ function registrarEnvioWpp(idRaw, conversaId) {
   mensagensEnviadasWpp.set(idMensagem, {
     conversaId: normalizarId(conversaId) || conversaId,
     criadoEm: Date.now(),
-    statusEntrega: null,
+    statusEntrega: mensagensEnviadasWpp.get(idMensagem)?.statusEntrega || null,
   });
 
   if (mensagensEnviadasWpp.size > 500) {
@@ -83,6 +86,7 @@ function registrarEnvioWpp(idRaw, conversaId) {
 
 function prioridadeStatusEntregaWpp(status) {
   const mapa = {
+    erro: 0.5,
     pendente: 0,
     enviada: 1,
     entregue: 2,
@@ -450,7 +454,7 @@ function emitirMensagemEnviadaWpp({
   mime = null,
   fileName = null,
   mediaPath = null,
-  ack = 1,
+  ack = null,
   resposta = null,
 }) {
   const idMensagem = registrarEnvioWpp(idRaw, conversaId);
@@ -459,7 +463,7 @@ function emitirMensagemEnviadaWpp({
     return;
   }
 
-  const statusEntregaInicial = normalizarAckWpp(ack) || "enviada";
+  const statusEntregaInicial = normalizarAckWpp(ack);
   atualizarStatusConhecidoEnvioWpp(idMensagem, statusEntregaInicial);
 
   enviar("mensagem", {
@@ -483,7 +487,7 @@ function emitirMensagemEnviadaWpp({
         ? pathToFileURL(mediaPath).href
         : null,
     rawBase64: null,
-    statusEntrega: statusEntregaInicial,
+    statusEntrega: mensagensEnviadasWpp.get(idMensagem)?.statusEntrega || statusEntregaInicial,
   });
 }
 
@@ -500,6 +504,12 @@ function registrarAckWpp() {
         return;
       }
 
+      // ACK pode chegar antes de sendText resolver, ou para uma mensagem
+      // historica fora do mapa limitado. Somente IDs explicitamente nossos.
+      if (!mensagensEnviadasWpp.has(idMensagem) && ack?.id?.fromMe === true) {
+        const destino = normalizarId(ack.id.remote || ack.to);
+        if (destino) registrarEnvioWpp(ack.id, destino);
+      }
       const registro = mensagensEnviadasWpp.get(idMensagem);
 
       if (!registro) {
@@ -1707,7 +1717,7 @@ async function encaminharMensagemWpp(
       mime: origemMensagem.mime,
       fileName: origemMensagem.fileName,
       mediaPath: origemMensagem.mediaPath,
-      ack: 1,
+      ack: resultado?.ack,
       resposta: null,
     });
   }
@@ -1724,7 +1734,7 @@ async function encaminharMensagemWpp(
   };
 }
 
-async function enviarTextoWpp(conversaId, texto, resposta = null) {
+async function enviarTextoWpp(conversaId, texto, resposta = null, idLocalEnvio = null) {
   if (!client || typeof client.sendText !== "function") {
     throw new Error("WPPConnect ainda nao esta pronto para enviar.");
   }
@@ -1756,9 +1766,15 @@ async function enviarTextoWpp(conversaId, texto, resposta = null) {
     idRaw,
     texto: conteudo,
     tipo: "texto",
-    ack: resultado?.ack ?? 1,
+    ack: resultado?.ack,
     resposta: respostaNormalizada,
   });
+
+  const statusEntrega = mensagensEnviadasWpp.get(extrairIdMensagemWpp(idRaw))?.statusEntrega || normalizarAckWpp(resultado?.ack);
+  if (idLocalEnvio) {
+    enviar('envio-texto-estado', { conversaId, idLocalEnvio, estado: 'concluido',
+      idMensagem: extrairIdMensagemWpp(idRaw), statusEntrega });
+  }
 
   await desarquivarAposEnvio(origem, chatId);
 
@@ -1768,6 +1784,7 @@ async function enviarTextoWpp(conversaId, texto, resposta = null) {
     idMensagem: extrairIdMensagemWpp(idRaw),
     conversaId: origem,
     via: "wppconnect",
+    statusEntrega,
   };
 }
 
@@ -1913,7 +1930,7 @@ async function enviarAnexoWpp(
     mime,
     fileName: tipoMensagem === "documento" ? nome : null,
     mediaPath: resultado?.__whatsiappMediaPath || caminho,
-    ack: resultado?.ack ?? 1,
+    ack: resultado?.ack,
     resposta: respostaNormalizada,
   });
 
@@ -2238,7 +2255,7 @@ function normalizarItemHistoricoPerfilWpp(mensagem, conversaId) {
     participant: converterIdWppParaBaileys(mensagem?.author) || null,
     lidaPorMim: minha || !!mensagem?.isRead,
     statusEntrega: minha
-      ? normalizarAckWpp(mensagem?.ack) || "enviada"
+      ? normalizarAckWpp(mensagem?.ack)
       : null,
     resposta: respostaRecebidaWpp(mensagem),
     mediaPath: null,
@@ -2620,4 +2637,3 @@ async function recuperarMidiaHistoricaWpp(dados = {}) {
     "Mensagem historica nao encontrada no historico disponivel do WhatsApp Web.",
   );
 }
-

@@ -1,3 +1,4 @@
+const { mesclarStatus } = require('../scripts/status-entrega');
 function criarModuloAnexos(dependencias = {}) {
   const {
     ipcRenderer,
@@ -164,7 +165,7 @@ function criarModuloAnexos(dependencias = {}) {
     mensagemLocal.rawBase64 =
       dados.rawBase64 || mensagemLocal.rawBase64 || null;
     mensagemLocal.statusEntrega =
-      dados.statusEntrega || mensagemLocal.statusEntrega || "enviada";
+      mesclarStatus(mensagemLocal.statusEntrega, dados.statusEntrega);
 
     videosLocaisPendentes.delete(localId);
     return true;
@@ -825,7 +826,7 @@ function criarModuloAnexos(dependencias = {}) {
 
         if (mensagemLocal && resultado.idMensagem) {
           mensagemLocal.idMensagem = resultado.idMensagem;
-          mensagemLocal.statusEntrega = "enviada";
+          mensagemLocal.statusEntrega = mesclarStatus(mensagemLocal.statusEntrega, resultado.statusEntrega);
           videosLocaisPendentes.delete(videoOtimistaId);
 
           if (obterConversaAtual?.() === conversa.id) {

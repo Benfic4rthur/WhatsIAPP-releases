@@ -440,7 +440,7 @@ async function enviarFigurinhaWpp(
             disponivel: true,
             enviado: true,
             id: typeof id === "string" ? id : null,
-            ack: Number(resultado?.ack ?? 1) || 1,
+            ack: resultado?.ack ?? null,
           };
         },
         {
@@ -632,7 +632,7 @@ async function enviarContatoWpp(
     idRaw,
     texto: `👤 ${nomeFinal}`,
     tipo: "contato",
-    ack: resultado?.ack ?? 1,
+    ack: resultado?.ack,
   });
 
   await desarquivarAposEnvio(origem, chatId);

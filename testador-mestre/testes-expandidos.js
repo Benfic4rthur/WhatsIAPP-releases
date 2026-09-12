@@ -1267,6 +1267,75 @@ function registrarTestesExpandidos(ctx = {}) {
         );
   });
 
+  implementar("TM-P018", "rapido", async () => {
+    const {
+      normalizarStatus,
+      mesclarStatus,
+      criarRegistroStatus,
+      criarIndicadorStatus,
+    } = require(path.join(raizProjeto, "scripts/status-entrega.js"));
+
+    const estados = ["pendente", "enviada", "entregue", "lida"];
+    const progressao = estados.reduce(
+      (atual, estado) => mesclarStatus(atual, estado),
+      null,
+    );
+    const semRebaixamento =
+      progressao === "lida" &&
+      mesclarStatus("lida", "entregue") === "lida" &&
+      mesclarStatus("erro", "pendente") === "erro";
+
+    const memoria = new Map();
+    const storage = {
+      getItem: (chave) => memoria.get(chave) || null,
+      setItem: (chave, valor) => memoria.set(chave, valor),
+    };
+    const registro = criarRegistroStatus(storage);
+    registro.mesclar("5511999999999@c.us", "status-teste", "enviada");
+    registro.mesclar("5511999999999@s.whatsapp.net", "status-teste", "lida");
+    await Promise.resolve();
+    const restaurado = criarRegistroStatus(storage).mesclar(
+      "5511999999999@c.us",
+      "status-teste",
+    );
+
+    const documento = {
+      createElement: () => ({
+        dataset: {},
+        setAttribute() {},
+        className: "",
+        innerHTML: "",
+      }),
+    };
+    const indicador = criarIndicadorStatus(documento, {
+      minha: true,
+      statusEntrega: "lida",
+    });
+    const indicadorDesconhecido = criarIndicadorStatus(documento, {
+      minha: true,
+      statusEntrega: "desconhecido",
+    });
+
+    const ok =
+      normalizarStatus("desconhecido") === null &&
+      semRebaixamento &&
+      restaurado === "lida" &&
+      indicador?.dataset?.statusEntrega === "lida" &&
+      indicadorDesconhecido === null;
+
+    return ok
+      ? pass(
+          "Estados de entrega sao mesclados monotonicamente, persistem somente apos confirmacao e nao exibem tique para estado desconhecido.",
+          { progressao, restaurado, indicador: indicador?.dataset?.statusEntrega },
+        )
+      : fail("O contrato de status de entrega permitiu rebaixamento ou exibicao sem confirmacao.", {
+          progressao,
+          restaurado,
+          indicador: indicador?.dataset?.statusEntrega || null,
+          indicadorDesconhecido: indicadorDesconhecido ? "presente" : null,
+        });
+  });
+
   implementar(
     "TM-P016",
     "real",

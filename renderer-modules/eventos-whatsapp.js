@@ -1,3 +1,4 @@
+const { criarRegistroStatus } = require('../scripts/status-entrega');
 function criarModuloEventosWhatsapp(deps = {}) {
   const {
     ipcRenderer,
@@ -76,6 +77,43 @@ function criarModuloEventosWhatsapp(deps = {}) {
     agendarSugestaoIA,
     registrarReacoesLocalmente,
   } = deps;
+
+  let storageStatus;
+  try { storageStatus = document.defaultView?.localStorage; } catch {}
+  const statusConfirmados = criarRegistroStatus(storageStatus);
+  const enviosTextoLocais = new Map();
+
+  function reconciliarStatus(conversaId, msg, recebido) {
+    return statusConfirmados.mesclar(conversaId, msg?.idMensagem, msg?.statusEntrega, recebido);
+  }
+
+  ipcRenderer.on('envio-texto-estado', (_, dados) => {
+    const conversa = conversas[dados?.conversaId];
+    if (!conversa || !dados?.idLocalEnvio) return;
+    const localId = dados.idLocalEnvio;
+    let msg = enviosTextoLocais.get(localId);
+    if (dados.estado === 'pendente') {
+      msg = { idMensagem: localId, tipo: 'texto', texto: dados.texto,
+        resposta: dados.resposta || null, minha: true, statusEntrega: 'pendente',
+        timestamp: dados.timestamp, horario: new Date(dados.timestamp * 1000).toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}),
+        envioTextoLocal: true };
+      enviosTextoLocais.set(localId, msg);
+      conversa.mensagens.push(msg);
+    } else if (dados.idMensagem) {
+      const real = conversa.mensagens.find(m => m.idMensagem === dados.idMensagem);
+      const estado = statusConfirmados.mesclar(conversa.id, dados.idMensagem, real?.statusEntrega, dados.statusEntrega);
+      if (real) real.statusEntrega = estado;
+      if (msg && !real) conversa.mensagens.push({ ...msg, idMensagem: dados.idMensagem, statusEntrega: estado, envioTextoLocal: false });
+      conversa.mensagens = conversa.mensagens.filter(m => m.idMensagem !== localId);
+      enviosTextoLocais.delete(localId);
+    } else if (msg) {
+      msg.statusEntrega = 'erro';
+      msg.erroEnvio = dados.erro || 'Envio não confirmado';
+    }
+    ordenarMensagensPorTimestamp(conversa.mensagens);
+    renderConversas();
+    if (obterConversaAtual() === conversa.id) renderMensagens();
+  });
 
   function ordenarMensagensPorTimestamp(lista) {
     if (!Array.isArray(lista) || lista.length < 2) {
@@ -876,6 +914,7 @@ function criarModuloEventosWhatsapp(deps = {}) {
           }
           return {
             ...msg,
+            statusEntrega: statusConfirmados.mesclar(conversa.id, msg.idMensagem, anteriorMsg?.statusEntrega, msg.statusEntrega),
             idMensagemWpp:
               msg?.idMensagemWpp || anteriorMsg?.idMensagemWpp || null,
             resposta: msg?.resposta || anteriorMsg?.resposta || null,
@@ -913,6 +952,11 @@ function criarModuloEventosWhatsapp(deps = {}) {
         }
         const timestampAnterior = Number(msg?.timestamp || 0) || 0;
         const ehAudioLocal = idMensagem.startsWith("local-audio-");
+        if (msg.envioTextoLocal && enviosTextoLocais.has(idMensagem)) {
+          mensagensMescladas.push(enviosTextoLocais.get(idMensagem));
+          idsSnapshot.add(idMensagem);
+          continue;
+        }
         const ehMensagemRecenteForaDoSnapshot =
           timestampAnterior > 0 &&
           timestampAnterior >= maiorTimestampSnapshot &&
@@ -1347,8 +1391,7 @@ function criarModuloEventosWhatsapp(deps = {}) {
         null;
       mensagemExistente.rawBase64 =
         dados.rawBase64 || mensagemExistente.rawBase64 || null;
-      mensagemExistente.statusEntrega =
-        dados.statusEntrega || mensagemExistente.statusEntrega || null;
+      mensagemExistente.statusEntrega = reconciliarStatus(conversa.id, mensagemExistente, dados.statusEntrega);
       mensagemExistente.editada =
         !!dados.editada || !!mensagemExistente.editada;
       if (Array.isArray(dados.reacoes)) {
@@ -1390,7 +1433,7 @@ function criarModuloEventosWhatsapp(deps = {}) {
         mediaPath: dados.mediaPath || null,
         mediaUrl: dados.mediaUrl || null,
         rawBase64: dados.rawBase64 || null,
-        statusEntrega: dados.statusEntrega || null,
+        statusEntrega: statusConfirmados.mesclar(conversa.id, dados.idMensagem, dados.statusEntrega),
         editada: !!dados.editada,
         reacoes: normalizarListaReacoes(dados.reacoes),
         animacaoEntrada:
@@ -1537,6 +1580,7 @@ function criarModuloEventosWhatsapp(deps = {}) {
   ipcRenderer.on("mensagem-status", (_, dados) => {
     const conversaId = String(dados?.conversaId || "");
     const idMensagem = String(dados?.idMensagem || "");
+    const statusRecebido = statusConfirmados.mesclar(conversaId, idMensagem, dados?.statusEntrega);
     const conversa = conversas[conversaId];
     const msg = conversa?.mensagens?.find(
       (item) => String(item.idMensagem || "") === idMensagem,
@@ -1595,7 +1639,8 @@ function criarModuloEventosWhatsapp(deps = {}) {
     }
 
     if (dados?.statusEntrega) {
-      msg.statusEntrega = dados.statusEntrega;
+      msg.statusEntrega = reconciliarStatus(conversa.id, msg, statusRecebido);
+      renderConversas();
     }
 
     if (reacoesDepois) {

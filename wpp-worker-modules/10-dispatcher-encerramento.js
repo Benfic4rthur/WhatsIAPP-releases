@@ -421,6 +421,7 @@ async function responderSolicitacao(id, acao, dados) {
           dados?.conversaId,
           dados?.texto,
           dados?.resposta,
+          dados?.idLocalEnvio,
         );
       }
 

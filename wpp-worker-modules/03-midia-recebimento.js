@@ -231,7 +231,7 @@ async function enviarAudioGravadoWpp(conversaId, bytes, mime, resposta = null) {
     tipo: "audio",
     mime: "audio/ogg",
     mediaPath: caminhoOgg,
-    ack: resultado?.ack ?? 1,
+    ack: resultado?.ack,
     resposta: respostaNormalizada,
   });
 
@@ -1002,7 +1002,7 @@ async function processarMensagemPropriaAoVivoWpp(mensagem) {
   registrarEnvioWpp(mensagem.id, idNormalizado);
 
   const statusEntregaInicial =
-    normalizarAckWpp(mensagem?.ack) || "enviada";
+    normalizarAckWpp(mensagem?.ack);
   atualizarStatusConhecidoEnvioWpp(idMensagem, statusEntregaInicial);
 
   mensagensPropriasAoVivoWppRecentes.set(idMensagem, Date.now());

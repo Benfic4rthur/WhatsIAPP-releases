@@ -1,3 +1,4 @@
+const { criarIndicadorStatus } = require('../scripts/status-entrega');
 const CHAVE_NAO_LIDAS = "whatsiapp.naoLidas.v1";
 
 function criarPersistenciaNaoLidas(dependencias = {}) {
@@ -727,6 +728,8 @@ function criarModuloListaConversas(dependencias = {}) {
 
     const badgeNaoLidas = criarBadgeNaoLidas(conversa);
 
+    const indicadorEntrega = criarIndicadorStatus(document, ultima, 'conversa-status');
+    if (indicadorEntrega) linhaPreview.appendChild(indicadorEntrega);
     linhaPreview.appendChild(preview);
 
     if (badgeNaoLidas) {

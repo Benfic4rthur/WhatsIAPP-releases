@@ -1,9 +1,9 @@
 {
   "name": "whatsiapp",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "main": "index.js",
   "scripts": {
-    "test": "node --check index.js && node --check whatsapp-worker.js && node --check wpp-worker.js",
+    "test": "node --check index.js && node --check whatsapp-worker.js && node --check wpp-worker.js && node --check renderer-modules/anexos.js && node --check renderer-modules/audio.js && node --check renderer-modules/eventos-whatsapp.js && node --check renderer-modules/lista-conversas.js && node --check renderer-modules/renderizacao-mensagens.js && node --check renderer-modules/compositor-mensagens.js && node scripts/testar-status-entrega.js",
     "start": "electron .",
     "doctor": "node scripts/diagnostico-ambiente.js",
     "clean:dist": "node scripts/limpar-dist-local.js",

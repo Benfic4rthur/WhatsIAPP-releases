@@ -1,3 +1,4 @@
+const { mesclarStatus } = require('../scripts/status-entrega');
 const crypto = require("crypto");
 const fs = require("fs");
 const os = require("os");
@@ -952,7 +953,7 @@ function criarModuloAudio(dependencias = {}) {
         const urlAnterior = mensagemLocal.mediaUrl;
 
         mensagemLocal.idMensagem = resultado.idMensagem;
-        mensagemLocal.statusEntrega = "enviada";
+        mensagemLocal.statusEntrega = mesclarStatus(mensagemLocal.statusEntrega, resultado.statusEntrega);
         mensagemLocal.mime = resultado.mime || mimeEnvio;
         mensagemLocal.mediaPath =
           resultado.mediaPath || mensagemLocal.mediaPath || null;
@@ -1651,7 +1652,7 @@ function criarModuloAudio(dependencias = {}) {
     mensagemLocal.mediaPath = dados.mediaPath || mensagemLocal.mediaPath;
     mensagemLocal.mediaUrl = dados.mediaUrl || mensagemLocal.mediaUrl;
     mensagemLocal.statusEntrega =
-      dados.statusEntrega || mensagemLocal.statusEntrega;
+      mesclarStatus(mensagemLocal.statusEntrega, dados.statusEntrega);
 
     if (
       dados.mediaUrl &&

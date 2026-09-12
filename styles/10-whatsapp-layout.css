@@ -1690,3 +1690,16 @@ body:not(.whatsiapp-ia-lateral-aberta) .ia {
     font-size: 10px;
 }
 
+.indicador-entrega {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    vertical-align: middle;
+    color: #8696a0;
+    line-height: 1;
+}
+.indicador-entrega-lida { color: #53bdeb; }
+.indicador-entrega-erro { color: #f26b6b; }
+.conversa-status { margin-right: 4px; }
+.mensagem-status { margin-left: 3px; }
+.envio-tentar-novamente { border: 0; background: transparent; color: #f26b6b; cursor: pointer; font-size: 11px; text-decoration: underline; }

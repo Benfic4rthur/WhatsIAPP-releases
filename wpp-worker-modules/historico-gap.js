@@ -139,7 +139,7 @@ function normalizarMensagemHistoricoGapWpp(
     participant: participant || null,
     lidaPorMim: minha || !!mensagem?.isRead,
     statusEntrega: minha
-      ? normalizarAckWpp(mensagem?.ack) || "enviada"
+      ? normalizarAckWpp(mensagem?.ack)
       : null,
     mediaPath: null,
     mediaUrl: null,

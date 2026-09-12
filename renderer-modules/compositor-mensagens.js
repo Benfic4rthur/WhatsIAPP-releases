@@ -307,7 +307,9 @@ function criarModuloCompositorMensagens(deps = {}) {
     }
     const textoOriginal = campoMensagem.value;
     const respostaEnvio = obterRespostaAtualParaEnvio();
-    const animacaoVisualEnvio = iniciarAnimacaoEnvioTexto(texto);
+    // O evento envio-texto-estado insere a mensagem real pendente, com relogio.
+    // Nao criar tambem a bolha temporaria da animacao.
+    const animacaoVisualEnvio = null;
     const desarquivadaLocalmente = desarquivarLocalmenteAoEnviar(conversa);
     botaoEnviarMensagem.disabled = true;
     campoMensagem.disabled = true;
