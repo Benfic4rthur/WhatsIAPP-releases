@@ -21,6 +21,7 @@ let fullReady = false;
 let prontidaoInicialFinalizada = false;
 let preparandoProntidaoInicial = false;
 let qrAceito = false;
+let qrAguardandoLeitura = false;
 
 const aliasesParaChat = new Map();
 const cacheLidPn = new Map();

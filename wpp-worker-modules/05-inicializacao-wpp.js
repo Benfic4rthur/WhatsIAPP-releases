@@ -1,5 +1,6 @@
 function confirmarAutenticacaoWpp(origem) {
   if (qrAceito) return;
+  qrAguardandoLeitura = false;
   qrAceito = true;
   enviarEtapaSincronizacao("wpp-autenticado", origem);
   enviar("wpp-ready", { conectado: true, sincronizando: true });
@@ -362,6 +363,7 @@ async function iniciar() {
       // Nesse caso qrAceito poderia ficar true e esconder um QR novo.
       // Sempre que um QR real for gerado, a sessão está aguardando login.
       qrAceito = false;
+      qrAguardandoLeitura = true;
 
       console.log(`WPPConnect: QR gerado, tentativa ${attempts}.`);
 
@@ -386,20 +388,32 @@ async function iniciar() {
         qrAceito = false;
       }
 
-      if (
-        statusNormalizado === "qrreadsuccess" ||
-        statusNormalizado === "islogged" ||
+      if (statusNormalizado === "qrreadsuccess" || statusNormalizado === "islogged") {
+        // Somente estes estados confirmam que o QR foi aceito. Estados como
+        // syncing/inchat podem chegar antes da leitura e não podem esconder
+        // o QR que o usuário ainda precisa escanear.
+        qrAguardandoLeitura = false;
+        confirmarAutenticacaoWpp(statusNormalizado);
+      } else if (
         statusNormalizado === "inchat" ||
         statusNormalizado === "syncing"
       ) {
+        if (qrAguardandoLeitura) {
+          enviarEtapaSincronizacao(
+            statusNormalizado === "syncing"
+              ? "wpp-sincronizando"
+              : "wpp-interface",
+            statusNormalizado,
+          );
+          enviar("wpp-status", {
+            texto: `${statusTexto} — aguardando leitura do QR Code`,
+          });
+          return;
+        }
+
         qrAceito = true;
 
-        if (
-          statusNormalizado === "qrreadsuccess" ||
-          statusNormalizado === "islogged"
-        ) {
-          enviarEtapaSincronizacao("wpp-autenticado", statusNormalizado);
-        } else if (statusNormalizado === "syncing") {
+        if (statusNormalizado === "syncing") {
           enviarEtapaSincronizacao("wpp-sincronizando", statusNormalizado);
         } else if (statusNormalizado === "inchat") {
           enviarEtapaSincronizacao("wpp-interface", statusNormalizado);
