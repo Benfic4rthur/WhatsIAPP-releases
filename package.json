@@ -1,6 +1,6 @@
 {
   "name": "whatsiapp",
-  "version": "1.0.16",
+  "version": "1.0.17",
   "main": "index.js",
   "scripts": {
     "test": "node --check index.js && node --check whatsapp-worker.js && node --check wpp-worker.js && node --check renderer-modules/anexos.js && node --check renderer-modules/audio.js && node --check renderer-modules/eventos-whatsapp.js && node --check renderer-modules/lista-conversas.js && node --check renderer-modules/renderizacao-mensagens.js && node --check renderer-modules/compositor-mensagens.js && node scripts/testar-status-entrega.js && node scripts/testar-midias.js && node scripts/testar-cartoes.js",
@@ -74,7 +74,12 @@
       "icon": "assets/logo.png",
       "artifactName": "WhatsIAPP-Setup-${version}-${arch}.${ext}",
       "target": [
-        { "target": "nsis", "arch": ["x64"] }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
       ]
     },
     "mac": {
