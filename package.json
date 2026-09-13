@@ -10,6 +10,8 @@
     "prepare:icon": "node scripts/preparar-icone-macos.js assets/logo.png assets/logo-macos.png",
     "prepare:chrome": "node scripts/preparar-chrome-empacotado.js",
     "dist:mac": "npm run clean:dist && npm run prepare:icon && npm run prepare:chrome && electron-builder --mac --publish never",
+    "dist:win": "node scripts/gerar-windows.js",
+    "test:windows-packaging": "node scripts/testar-empacotamento-windows.js",
     "release:mac": "npm run clean:dist && npm run prepare:icon && npm run prepare:chrome && electron-builder --mac --publish onTag",
     "postinstall": "node scripts/aplicar-patches-whatsiapp.js"
   },
@@ -69,9 +71,10 @@
       "!**/.env*"
     ],
     "win": {
-      "icon": "assets/icon.ico",
+      "icon": "assets/logo.png",
+      "artifactName": "WhatsIAPP-Setup-${version}-${arch}.${ext}",
       "target": [
-        "nsis"
+        { "target": "nsis", "arch": ["x64"] }
       ]
     },
     "mac": {

@@ -91,16 +91,9 @@ function obterChromeEmpacotado() {
     return null;
   }
 
-  const executavel = path.join(
-    process.resourcesPath,
-    "wppconnect-chrome",
-    "Google Chrome for Testing.app",
-    "Contents",
-    "MacOS",
-    "Google Chrome for Testing",
-  );
+  const executavel = require('./scripts/recursos-desktop').caminhoChrome(process.resourcesPath);
 
-  return fs.existsSync(executavel) ? executavel : null;
+  return executavel && fs.existsSync(executavel) ? executavel : null;
 }
 
 function registrarEventosDeEstado() {
