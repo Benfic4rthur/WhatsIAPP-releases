@@ -1,6 +1,6 @@
-const { criarIndicadorStatus } = require('../scripts/status-entrega');
-const { criarCartaoMensagem } = require('./cartoes-mensagem');
-const { mesclarCartoes } = require('../scripts/cartoes-mensagem');
+const { criarIndicadorStatus } = require("../scripts/status-entrega");
+const { criarCartaoMensagem } = require("./cartoes-mensagem");
+const { mesclarCartoes } = require("../scripts/cartoes-mensagem");
 function criarModuloRenderizacaoMensagens(dependencias = {}) {
   const {
     ipcRenderer,
@@ -122,15 +122,73 @@ function criarModuloRenderizacaoMensagens(dependencias = {}) {
     }
   }
 
-  function criarTextoMensagem(msg) {
-    if (!msg.texto) return null;
+  function removerUrlPreviewDoTexto(valor, urlPreview) {
+    const texto = String(valor || "");
+    const alvo = normalizarUrlExterna(urlPreview);
+
+    if (!texto || !alvo) {
+      return texto;
+    }
+
+    let resultado = "";
+    let indice = 0;
+    let removeu = false;
+
+    while (indice < texto.length) {
+      const ocorrencia = proximaOcorrenciaLinkOuTelefone(texto, indice);
+
+      if (!ocorrencia) {
+        resultado += texto.slice(indice);
+        break;
+      }
+
+      if (ocorrencia.indice > indice) {
+        resultado += texto.slice(indice, ocorrencia.indice);
+      }
+
+      if (ocorrencia.tipo === "url") {
+        const partes = separarPontuacaoFinalUrl(ocorrencia.texto);
+        const urlOcorrencia = normalizarUrlExterna(partes.url);
+
+        if (urlOcorrencia === alvo) {
+          removeu = true;
+          resultado += partes.final;
+        } else {
+          resultado += ocorrencia.texto;
+        }
+      } else {
+        resultado += ocorrencia.texto;
+      }
+
+      indice = ocorrencia.indice + ocorrencia.texto.length;
+    }
+
+    if (!removeu) {
+      return texto;
+    }
+
+    return resultado
+      .replace(/[ \t]+\n/g, "\n")
+      .replace(/\n[ \t]+/g, "\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  }
+
+  function criarTextoMensagem(msg, opcoes = {}) {
+    const textoOriginal = String(msg?.texto || "");
+    const textoExibicao = opcoes?.urlPreview
+      ? removerUrlPreviewDoTexto(textoOriginal, opcoes.urlPreview)
+      : textoOriginal;
+
+    if (!textoExibicao) return null;
+
     const texto = document.createElement("div");
     texto.className = "mensagem-texto";
     Object.assign(texto.style, {
       whiteSpace: "pre-wrap",
       overflowWrap: "anywhere",
     });
-    adicionarTextoFormatadoComLinks(texto, msg.texto);
+    adicionarTextoFormatadoComLinks(texto, textoExibicao);
     return texto;
   }
 
@@ -524,7 +582,11 @@ function criarModuloRenderizacaoMensagens(dependencias = {}) {
     }
   }
 
-  function manterFimDepoisDeImagemCarregar(conversaId, conversa, estadoAnterior) {
+  function manterFimDepoisDeImagemCarregar(
+    conversaId,
+    conversa,
+    estadoAnterior,
+  ) {
     // Quando a conversa ja estava no fim, uma imagem nova pode aumentar a
     // altura da bolha somente depois do evento load. O scroll feito logo apos
     // o render acontece antes desse crescimento e deixa a ultima mensagem
@@ -700,8 +762,13 @@ function criarModuloRenderizacaoMensagens(dependencias = {}) {
           if (citacao) {
             caixa.appendChild(citacao);
           }
+          const dadosCartao = mesclarCartoes(msg);
           const cartao = criarCartaoMensagem(document, shell, msg);
-          if (cartao) caixa.appendChild(cartao);
+          const urlPreviewCartao = dadosCartao?.previaLink?.url || "";
+          if (cartao) {
+            caixa.classList.add("mensagem-com-cartao");
+            caixa.appendChild(cartao);
+          }
           if (
             ["imagem", "audio", "video", "documento", "sticker"].includes(
               msg.tipo,
@@ -709,13 +776,21 @@ function criarModuloRenderizacaoMensagens(dependencias = {}) {
           ) {
             caixa.classList.add("mensagem-midia", `mensagem-midia-${msg.tipo}`);
             caixa.appendChild(criarConteudoMidia(msg, conversa));
-            if (msg.texto && (msg.tipo !== "documento" ||
-                (msg.texto !== msg.fileName && msg.texto !== "Documento"))) {
-              const texto = criarTextoMensagem(msg);
+            if (
+              msg.texto &&
+              (msg.tipo !== "documento" ||
+                (msg.texto !== msg.fileName && msg.texto !== "Documento"))
+            ) {
+              const texto = criarTextoMensagem(msg, {
+                urlPreview: urlPreviewCartao,
+              });
               if (texto) caixa.appendChild(texto);
             }
           } else {
-            const texto = msg.tipo === 'localizacao' && cartao ? null : criarTextoMensagem(msg);
+            const texto =
+              msg.tipo === "localizacao" && cartao
+                ? null
+                : criarTextoMensagem(msg, { urlPreview: urlPreviewCartao });
             if (texto) {
               if (msg.tipo === "view_once") {
                 Object.assign(texto.style, {
@@ -755,19 +830,21 @@ function criarModuloRenderizacaoMensagens(dependencias = {}) {
         horaTexto.textContent = `${indicadorFavorito}${indicadorEditada}${msg.horario || ""}`;
         hora.appendChild(horaTexto);
 
-        const status = criarIndicadorStatus(document, msg, 'mensagem-status');
+        const status = criarIndicadorStatus(document, msg, "mensagem-status");
         if (status) hora.appendChild(status);
-        if (msg.envioTextoLocal && msg.statusEntrega === 'erro') {
-          const tentar = document.createElement('button');
-          tentar.type = 'button';
-          tentar.className = 'envio-tentar-novamente';
-          tentar.textContent = 'Revisar e tentar novamente';
-          tentar.title = msg.erroEnvio || 'Envio não confirmado';
-          tentar.addEventListener('click', () => {
-            const campo = document.getElementById('campoMensagem');
+        if (msg.envioTextoLocal && msg.statusEntrega === "erro") {
+          const tentar = document.createElement("button");
+          tentar.type = "button";
+          tentar.className = "envio-tentar-novamente";
+          tentar.textContent = "Revisar e tentar novamente";
+          tentar.title = msg.erroEnvio || "Envio não confirmado";
+          tentar.addEventListener("click", () => {
+            const campo = document.getElementById("campoMensagem");
             if (!campo || campo.value.trim()) return;
-            campo.value = msg.texto || '';
-            campo.dispatchEvent(new document.defaultView.Event('input', { bubbles: true }));
+            campo.value = msg.texto || "";
+            campo.dispatchEvent(
+              new document.defaultView.Event("input", { bubbles: true }),
+            );
             campo.focus();
           });
           hora.appendChild(tentar);
@@ -808,8 +885,10 @@ function criarModuloRenderizacaoMensagens(dependencias = {}) {
 
       if (resultado?.ok) {
         mensagemAtual.mediaUrl = resultado.mediaUrl || mensagemAtual.mediaUrl;
-        mensagemAtual.mediaPath = resultado.mediaPath || mensagemAtual.mediaPath;
-        mensagemAtual.rawBase64 = resultado.rawBase64 || mensagemAtual.rawBase64 || null;
+        mensagemAtual.mediaPath =
+          resultado.mediaPath || mensagemAtual.mediaPath;
+        mensagemAtual.rawBase64 =
+          resultado.rawBase64 || mensagemAtual.rawBase64 || null;
         mensagemAtual.mime = resultado.mime || mensagemAtual.mime || null;
         mensagemAtual.fileName = resultado.fileName || mensagemAtual.fileName;
         mensagemAtual.erroMidia = null;
@@ -835,20 +914,40 @@ function criarModuloRenderizacaoMensagens(dependencias = {}) {
   async function carregarMidiasDaConversa() {
     const conversa = conversas[obterConversaAtual()];
     if (!conversa) return;
-    if(Date.now()-(cartoesConsultados.get(conversa.id)||0)>60000 && conversa.mensagens.some(m=>
-      (m.tipo==='localizacao' && !m.localizacao) || (/https?:\/\//i.test(m.texto||'') && !m.previaLink))) {
-      cartoesConsultados.set(conversa.id,Date.now());
-      void ipcRenderer.invoke('recuperar-cartoes-conversa',{conversaId:conversa.id}).then(r=>{
-        if(!r?.ok){cartoesConsultados.delete(conversa.id);return;}
-        let mudou=false;
-        for(const item of r.mensagens || []){
-          const atual=conversas[conversa.id]?.mensagens.find(m=>m.idMensagem===item.idMensagem);
-          if(!atual || atual.apagadaParaTodos || atual.tipo==='apagada') continue;
-          const cartoes=mesclarCartoes(atual,item);
-          if(JSON.stringify(mesclarCartoes(atual))!==JSON.stringify(cartoes)){Object.assign(atual,cartoes);mudou=true;}
-        }
-        if(mudou && obterConversaAtual()===conversa.id) renderMensagens();
-      }).catch(()=>cartoesConsultados.delete(conversa.id));
+    if (
+      Date.now() - (cartoesConsultados.get(conversa.id) || 0) > 60000 &&
+      conversa.mensagens.some(
+        (m) =>
+          (m.tipo === "localizacao" && !m.localizacao) ||
+          (/https?:\/\//i.test(m.texto || "") && !m.previaLink),
+      )
+    ) {
+      cartoesConsultados.set(conversa.id, Date.now());
+      void ipcRenderer
+        .invoke("recuperar-cartoes-conversa", { conversaId: conversa.id })
+        .then((r) => {
+          if (!r?.ok) {
+            cartoesConsultados.delete(conversa.id);
+            return;
+          }
+          let mudou = false;
+          for (const item of r.mensagens || []) {
+            const atual = conversas[conversa.id]?.mensagens.find(
+              (m) => m.idMensagem === item.idMensagem,
+            );
+            if (!atual || atual.apagadaParaTodos || atual.tipo === "apagada")
+              continue;
+            const cartoes = mesclarCartoes(atual, item);
+            if (
+              JSON.stringify(mesclarCartoes(atual)) !== JSON.stringify(cartoes)
+            ) {
+              Object.assign(atual, cartoes);
+              mudou = true;
+            }
+          }
+          if (mudou && obterConversaAtual() === conversa.id) renderMensagens();
+        })
+        .catch(() => cartoesConsultados.delete(conversa.id));
     }
     const pendentes = conversa.mensagens
       .filter(

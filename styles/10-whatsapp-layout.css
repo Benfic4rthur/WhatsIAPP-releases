@@ -967,13 +967,13 @@ body {
 }
 
 .app-versao {
-  display: block;
-  margin-top: 3px;
-  font-size: 11px;
-  line-height: 1.2;
-  font-weight: 400;
-  color: #a4b4bb;
-  letter-spacing: 0;
+    display: block;
+    margin-top: 3px;
+    font-size: 11px;
+    line-height: 1.2;
+    font-weight: 400;
+    color: #a4b4bb;
+    letter-spacing: 0;
 }
 
 .lateral-marca-texto {
@@ -1655,7 +1655,7 @@ body:not(.whatsiapp-ia-lateral-aberta) .ia {
     display: inline;
 }
 
-.mensagem:not(.mensagem-midia) > .hora {
+.mensagem:not(.mensagem-midia)>.hora {
     float: right;
     display: inline-flex;
     align-items: center;
@@ -1708,26 +1708,193 @@ body:not(.whatsiapp-ia-lateral-aberta) .ia {
     color: #8696a0;
     line-height: 1;
 }
-.indicador-entrega-lida { color: #53bdeb; }
-.cartao-mensagem { display:block; width:280px; max-width:100%; padding:0; margin:0 0 8px; border:1px solid #ffffff12; border-radius:12px; overflow:hidden; background:#17282c; color:#e9edef; text-align:left; cursor:pointer; font:inherit; }
-.minha .cartao-mensagem { background:#08483c; }
-.cartao-mensagem:focus-visible { outline:2px solid #00c99d; outline-offset:2px; }
-.cartao-mensagem img { display:block; width:100%; max-height:190px; object-fit:cover; }
-.cartao-localizacao-pin { height:150px; display:grid; place-items:center; font-size:46px; background:#23383f; }
-.cartao-mensagem-corpo { padding:10px 12px; overflow-wrap:anywhere; }
-.cartao-mensagem-corpo strong { display:block; font-size:14px; }
-.cartao-mensagem-corpo p { margin:6px 0 10px; font-size:13px; color:#b2c5c8; white-space:pre-line; display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; }
-.cartao-mensagem-corpo span { font-size:12px; color:#a4baba; }
-.localizacao-overlay { position:fixed; inset:0; z-index:20000; background:#000a; display:grid; place-items:center; }
-.localizacao-form { background:#18272d; color:#e9edef; padding:26px; border-radius:16px; width:min(430px,90vw); max-height:90vh; overflow:auto; box-shadow:0 12px 60px #0008; }
-.localizacao-form h2 { margin-top:0; font-size:21px; }
-.localizacao-form label { display:block; margin:12px 0; font-size:13px; }
-.localizacao-form input { box-sizing:border-box; display:block; width:100%; margin-top:6px; border:1px solid #476067; border-radius:7px; padding:10px; background:#0e1b20; color:#fff; }
-.localizacao-acoes { display:flex; justify-content:flex-end; gap:12px; }
-.localizacao-acoes button { padding:10px 14px; border:0; border-radius:7px; background:#2a4048; color:white; cursor:pointer; }
-.localizacao-acoes button[type=submit] { background:#008e72; }
-.localizacao-acoes button:disabled { opacity:.5; cursor:wait; }
-.indicador-entrega-erro { color: #f26b6b; }
-.conversa-status { margin-right: 4px; }
-.mensagem-status { margin-left: 3px; }
-.envio-tentar-novamente { border: 0; background: transparent; color: #f26b6b; cursor: pointer; font-size: 11px; text-decoration: underline; }
+
+.indicador-entrega-lida {
+    color: #53bdeb;
+}
+
+.cartao-mensagem {
+    display: block;
+    width: 280px;
+    max-width: 100%;
+    padding: 0;
+    margin: 0 0 8px;
+    border: 1px solid #ffffff12;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #17282c;
+    color: #e9edef;
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+}
+
+.minha .cartao-mensagem {
+    background: #08483c;
+}
+
+.cartao-mensagem:focus-visible {
+    outline: 2px solid #00c99d;
+    outline-offset: 2px;
+}
+
+.mensagem.mensagem-com-cartao {
+    box-sizing: border-box;
+    width: 298px;
+    max-width: min(66%, 298px);
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.mensagem.mensagem-com-cartao .cartao-mensagem {
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.mensagem.mensagem-com-cartao .mensagem-texto {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: normal;
+}
+
+.mensagem.mensagem-com-cartao .mensagem-texto a {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+/* Previews de links e localizacoes preenchem toda a largura do card
+   com recorte controlado, sem distorcao. */
+.cartao-link img,
+.cartao-localizacao img {
+    display: block;
+    width: 100%;
+    height: 168px;
+    max-width: 100%;
+    object-fit: cover;
+    object-position: center;
+    margin: 0;
+}
+
+.cartao-localizacao-pin {
+    height: 150px;
+    display: grid;
+    place-items: center;
+    font-size: 46px;
+    background: #23383f;
+}
+
+.cartao-mensagem-corpo {
+    padding: 10px 12px;
+    overflow-wrap: anywhere;
+}
+
+.cartao-mensagem-corpo strong {
+    display: block;
+    font-size: 14px;
+}
+
+.cartao-mensagem-corpo p {
+    margin: 6px 0 10px;
+    font-size: 13px;
+    color: #b2c5c8;
+    white-space: pre-line;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.cartao-mensagem-corpo span {
+    font-size: 12px;
+    color: #a4baba;
+}
+
+.localizacao-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 20000;
+    background: #000a;
+    display: grid;
+    place-items: center;
+}
+
+.localizacao-form {
+    background: #18272d;
+    color: #e9edef;
+    padding: 26px;
+    border-radius: 16px;
+    width: min(430px, 90vw);
+    max-height: 90vh;
+    overflow: auto;
+    box-shadow: 0 12px 60px #0008;
+}
+
+.localizacao-form h2 {
+    margin-top: 0;
+    font-size: 21px;
+}
+
+.localizacao-form label {
+    display: block;
+    margin: 12px 0;
+    font-size: 13px;
+}
+
+.localizacao-form input {
+    box-sizing: border-box;
+    display: block;
+    width: 100%;
+    margin-top: 6px;
+    border: 1px solid #476067;
+    border-radius: 7px;
+    padding: 10px;
+    background: #0e1b20;
+    color: #fff;
+}
+
+.localizacao-acoes {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.localizacao-acoes button {
+    padding: 10px 14px;
+    border: 0;
+    border-radius: 7px;
+    background: #2a4048;
+    color: white;
+    cursor: pointer;
+}
+
+.localizacao-acoes button[type=submit] {
+    background: #008e72;
+}
+
+.localizacao-acoes button:disabled {
+    opacity: .5;
+    cursor: wait;
+}
+
+.indicador-entrega-erro {
+    color: #f26b6b;
+}
+
+.conversa-status {
+    margin-right: 4px;
+}
+
+.mensagem-status {
+    margin-left: 3px;
+}
+
+.envio-tentar-novamente {
+    border: 0;
+    background: transparent;
+    color: #f26b6b;
+    cursor: pointer;
+    font-size: 11px;
+    text-decoration: underline;
+}
