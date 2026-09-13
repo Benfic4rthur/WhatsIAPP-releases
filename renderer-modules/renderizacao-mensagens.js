@@ -1,4 +1,6 @@
 const { criarIndicadorStatus } = require('../scripts/status-entrega');
+const { criarCartaoMensagem } = require('./cartoes-mensagem');
+const { mesclarCartoes } = require('../scripts/cartoes-mensagem');
 function criarModuloRenderizacaoMensagens(dependencias = {}) {
   const {
     ipcRenderer,
@@ -698,6 +700,8 @@ function criarModuloRenderizacaoMensagens(dependencias = {}) {
           if (citacao) {
             caixa.appendChild(citacao);
           }
+          const cartao = criarCartaoMensagem(document, shell, msg);
+          if (cartao) caixa.appendChild(cartao);
           if (
             ["imagem", "audio", "video", "documento", "sticker"].includes(
               msg.tipo,
@@ -711,7 +715,7 @@ function criarModuloRenderizacaoMensagens(dependencias = {}) {
               if (texto) caixa.appendChild(texto);
             }
           } else {
-            const texto = criarTextoMensagem(msg);
+            const texto = msg.tipo === 'localizacao' && cartao ? null : criarTextoMensagem(msg);
             if (texto) {
               if (msg.tipo === "view_once") {
                 Object.assign(texto.style, {
@@ -827,9 +831,25 @@ function criarModuloRenderizacaoMensagens(dependencias = {}) {
       renderMensagens();
     }
   }
+  const cartoesConsultados = new Map();
   async function carregarMidiasDaConversa() {
     const conversa = conversas[obterConversaAtual()];
     if (!conversa) return;
+    if(Date.now()-(cartoesConsultados.get(conversa.id)||0)>60000 && conversa.mensagens.some(m=>
+      (m.tipo==='localizacao' && !m.localizacao) || (/https?:\/\//i.test(m.texto||'') && !m.previaLink))) {
+      cartoesConsultados.set(conversa.id,Date.now());
+      void ipcRenderer.invoke('recuperar-cartoes-conversa',{conversaId:conversa.id}).then(r=>{
+        if(!r?.ok){cartoesConsultados.delete(conversa.id);return;}
+        let mudou=false;
+        for(const item of r.mensagens || []){
+          const atual=conversas[conversa.id]?.mensagens.find(m=>m.idMensagem===item.idMensagem);
+          if(!atual || atual.apagadaParaTodos || atual.tipo==='apagada') continue;
+          const cartoes=mesclarCartoes(atual,item);
+          if(JSON.stringify(mesclarCartoes(atual))!==JSON.stringify(cartoes)){Object.assign(atual,cartoes);mudou=true;}
+        }
+        if(mudou && obterConversaAtual()===conversa.id) renderMensagens();
+      }).catch(()=>cartoesConsultados.delete(conversa.id));
+    }
     const pendentes = conversa.mensagens
       .filter(
         (msg) =>

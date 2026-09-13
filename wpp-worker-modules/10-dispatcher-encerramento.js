@@ -378,6 +378,16 @@ async function responderSolicitacao(id, acao, dados) {
       return;
     }
 
+    if (acao === 'enviar-localizacao') {
+      const resultado = await enviarLocalizacaoWpp(dados);
+      parentPort.postMessage({tipo:'resposta',id,resultado:{ok:true,...resultado}});
+      return;
+    }
+    if (acao === 'recuperar-cartoes-conversa') {
+      const resultado=await recuperarCartoesConversaWpp(dados);
+      parentPort.postMessage({tipo:'resposta',id,resultado:{ok:true,...resultado}});
+      return;
+    }
     if (acao === "enviar-texto") {
       let resultado = null;
 

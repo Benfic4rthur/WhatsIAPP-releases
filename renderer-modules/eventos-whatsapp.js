@@ -1,4 +1,5 @@
 const { criarRegistroStatus } = require('../scripts/status-entrega');
+const { mesclarCartoes } = require('../scripts/cartoes-mensagem');
 function criarModuloEventosWhatsapp(deps = {}) {
   const {
     ipcRenderer,
@@ -82,6 +83,15 @@ function criarModuloEventosWhatsapp(deps = {}) {
   try { storageStatus = document.defaultView?.localStorage; } catch {}
   const statusConfirmados = criarRegistroStatus(storageStatus);
   const enviosTextoLocais = new Map();
+
+  ipcRenderer.on('mensagem-cartoes', (_, dados) => {
+    const chave = id => String(id || '').replace(/@c\.us$/, '@s.whatsapp.net');
+    const conversa = conversas[dados?.id] || Object.values(conversas).find(c => chave(c.id) === chave(dados?.id));
+    const msg = conversa?.mensagens?.find(item => item.idMensagem === dados.idMensagem);
+    if (!msg || msg.apagadaParaTodos || msg.tipo === 'apagada') return;
+    Object.assign(msg, mesclarCartoes(msg,dados));
+    if (obterConversaAtual() === conversa.id) renderMensagens();
+  });
 
   function reconciliarStatus(conversaId, msg, recebido) {
     return statusConfirmados.mesclar(conversaId, msg?.idMensagem, msg?.statusEntrega, recebido);
@@ -176,6 +186,7 @@ function criarModuloEventosWhatsapp(deps = {}) {
           id: String(msg?.idMensagem || ""),
           texto: String(msg?.texto || ""),
           tipo: String(msg?.tipo || ""),
+          cartoes: mesclarCartoes(msg),
           mime: String(msg?.mime || ""),
           arquivo: String(msg?.fileName || ""),
           viewOnce: String(msg?.viewOnceKind || ""),
@@ -914,6 +925,7 @@ function criarModuloEventosWhatsapp(deps = {}) {
           }
           return {
             ...msg,
+            ...mesclarCartoes(anteriorMsg || {}, msg),
             statusEntrega: statusConfirmados.mesclar(conversa.id, msg.idMensagem, anteriorMsg?.statusEntrega, msg.statusEntrega),
             idMensagemWpp:
               msg?.idMensagemWpp || anteriorMsg?.idMensagemWpp || null,
@@ -1368,6 +1380,7 @@ function criarModuloEventosWhatsapp(deps = {}) {
       mensagemExistente.resposta =
         dados.resposta || mensagemExistente.resposta || null;
       mensagemExistente.texto = dados.texto ?? mensagemExistente.texto;
+      Object.assign(mensagemExistente, mesclarCartoes(mensagemExistente,dados));
       mensagemExistente.mime = dados.mime || mensagemExistente.mime;
       mensagemExistente.fileName = dados.fileName || mensagemExistente.fileName;
       mensagemExistente.viewOnceKind =
@@ -1423,6 +1436,7 @@ function criarModuloEventosWhatsapp(deps = {}) {
         idMensagemWpp: dados.idMensagemWpp || null,
         resposta: dados.resposta || null,
         texto: dados.texto,
+        ...mesclarCartoes(dados),
         tipo: dados.tipo,
         mime: dados.mime,
         fileName: dados.fileName,

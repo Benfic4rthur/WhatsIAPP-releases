@@ -129,6 +129,7 @@ function normalizarMensagemHistoricoGapWpp(
     resposta,
     texto,
     tipo,
+    ...extrairCartoesWpp(mensagem),
     mime: mensagem?.mimetype || null,
     fileName: mensagem?.filename || mensagem?.fileName || null,
     viewOnceKind,

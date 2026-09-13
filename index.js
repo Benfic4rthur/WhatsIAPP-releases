@@ -21,6 +21,7 @@ const { pathToFileURL } = require("url");
 const fs = require("fs");
 const https = require("https");
 const crypto = require("crypto");
+const { mesclarCartoes: mesclarCartoesMensagem } = require('./scripts/cartoes-mensagem');
 const { execFile } = require("child_process");
 const { PDFDocument } = require("pdf-lib");
 const pdfParse = require("pdf-parse");
@@ -1083,6 +1084,7 @@ function limparMensagensRecentesTempoReal() {
 
 function resumoMensagemTempoReal(dados = {}) {
   return {
+    cartoes: dados.localizacao || dados.previaLink ? JSON.stringify(mesclarCartoesMensagem(dados)) : null,
     mediaPath: String(dados?.mediaPath || "").trim() || null,
     mediaUrl: String(dados?.mediaUrl || "").trim() || null,
     rawBase64: String(dados?.rawBase64 || "").trim() || null,
@@ -1100,6 +1102,7 @@ function mensagemTempoRealComplementar(registro, dados) {
   const anterior = registro?.dados || {};
   const atual = resumoMensagemTempoReal(dados);
   const campos = [
+    "cartoes",
     "mediaPath",
     "mediaUrl",
     "rawBase64",
@@ -1140,7 +1143,7 @@ function marcarMensagemTempoRealEncaminhada(dados) {
     timestamp: Date.now(),
     dados: {
       ...(typeof anterior === "object" ? anterior.dados : {}),
-      ...resumo,
+      ...Object.fromEntries(Object.entries(resumo).filter(([,valor]) => valor !== null && valor !== '')),
     },
   });
   limparMensagensRecentesTempoReal();
@@ -1267,6 +1270,10 @@ function encaminharMensagemTempoReal(dadosMensagem) {
         (item) => idMensagemTempoReal(item) === id,
       );
 
+    if (jaPendente) {
+      const pendente = mensagensPendentesPrivacidade.find(item => idMensagemTempoReal(item) === id);
+      Object.assign(pendente, mesclarCartoesMensagem(pendente,dadosMensagem));
+    }
     if (!jaPendente) {
       mensagensPendentesPrivacidade.push(dadosMensagem);
     }
@@ -1276,9 +1283,11 @@ function encaminharMensagemTempoReal(dadosMensagem) {
     return false;
   }
 
+  const complementar = mensagensRecentesTempoReal.has(idMensagemTempoReal(dadosMensagem)) &&
+    !!(dadosMensagem.localizacao || dadosMensagem.previaLink);
   marcarMensagemTempoRealEncaminhada(dadosMensagem);
 
-  enviarParaTela("mensagem", prepararMensagemComPrivacidade(dadosMensagem));
+  enviarParaTela(complementar ? 'mensagem-cartoes' : 'mensagem', prepararMensagemComPrivacidade(dadosMensagem));
 
   return true;
 }
@@ -1659,6 +1668,9 @@ function registrarWorker(worker, tipoWorker) {
 
       if (tipoWorker === "wpp" && mensagem.evento === "mensagem") {
         const dadosMensagem = mensagem.dados || {};
+        if (dadosMensagem.localizacao || dadosMensagem.previaLink) {
+          void solicitarAoWorker('baileys','importar-historico-wpp',{mensagens:[dadosMensagem]},15000).catch(() => {});
+        }
 
         if (mensagemEhCatchupDaInicializacao(dadosMensagem)) {
           cancelarFallbackBaileys(dadosMensagem);
@@ -7822,7 +7834,7 @@ function enviarEstadoAtualizacao(dados = {}) {
 }
 
 function configurarAtualizacaoAutomatica() {
-  if (!app.isPackaged || atualizadorConfigurado) {
+  if (!app.isPackaged || atualizadorConfigurado || require('./package.json').localTestBuild) {
     return;
   }
 
@@ -9048,6 +9060,18 @@ ipcMain.handle("marcar-conversa-lida", async (_, dados) => {
     leituraBaileys: !!resultadoBaileys?.ok,
     leituraWpp: !!resultadoWpp?.ok,
   };
+});
+
+ipcMain.handle('enviar-localizacao-whatsapp', async (_, dados) => {
+  return solicitarAoWorker('wpp','enviar-localizacao',dados || {},45000);
+});
+
+ipcMain.handle('recuperar-cartoes-conversa', async (_, dados) => {
+  const r=await solicitarAoWorker('wpp','recuperar-cartoes-conversa',dados || {},30000);
+  if(r?.ok && r.mensagens?.length) {
+    void solicitarAoWorker('baileys','importar-historico-wpp',{mensagens:r.mensagens},15000).catch(()=>{});
+  }
+  return r;
 });
 
 ipcMain.handle("enviar-mensagem-texto", async (_, dados) => {

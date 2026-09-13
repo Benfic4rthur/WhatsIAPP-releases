@@ -1,4 +1,5 @@
 const { mesclarStatus } = require('../scripts/status-entrega');
+const { abrirDialogoLocalizacao } = require('./cartoes-mensagem');
 function criarModuloAnexos(dependencias = {}) {
   const {
     ipcRenderer,
@@ -197,6 +198,11 @@ function criarModuloAnexos(dependencias = {}) {
         await abrirPainelCompartilharContato();
         return;
       }
+      if (tipo === 'localizacao') {
+        const conversa = conversas[obterConversaAtual()];
+        if (conversa) abrirDialogoLocalizacao({document,ipcRenderer,conversaId:conversa.id,nomeConversa:conversa.nome});
+        return;
+      }
 
       await selecionarEEnviarAnexo(tipo);
     });
@@ -208,6 +214,7 @@ function criarModuloAnexos(dependencias = {}) {
   menuAnexos.appendChild(criarOpcaoAnexo("Fotos e vídeos", "midia"));
   menuAnexos.appendChild(criarOpcaoAnexo("Áudio", "audio"));
   menuAnexos.appendChild(criarOpcaoAnexo("Contato", "contato"));
+  menuAnexos.appendChild(criarOpcaoAnexo('📍 Localização', 'localizacao'));
 
   function confirmarEnvioAnexo(selecionado, legenda) {
     return new Promise((resolve) => {

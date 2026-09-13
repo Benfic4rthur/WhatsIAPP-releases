@@ -44,7 +44,8 @@ function main() {
 
   fs.rmSync(destinoBase, { recursive: true, force: true });
   fs.mkdirSync(destinoBase, { recursive: true });
-  fs.cpSync(pastaChrome, destino, { recursive: true });
+  // Preserve links relativos do framework; resolve-los aqui prende o app ao cache local.
+  fs.cpSync(pastaChrome, destino, { recursive: true, verbatimSymlinks: true });
 
   console.log(`Chrome empacotado preparado em ${destino}.`);
 }

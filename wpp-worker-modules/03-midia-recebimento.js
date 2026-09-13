@@ -782,6 +782,7 @@ async function processarMensagemRecebidaWpp(mensagem) {
     trancada: false,
     idMensagem,
     idMensagemWpp: serializarId(mensagem.id) || null,
+    ...extrairCartoesWpp(mensagem),
     resposta,
     texto,
     tipo,
@@ -1058,6 +1059,7 @@ async function processarMensagemPropriaAoVivoWpp(mensagem) {
     null;
 
   const payloadMensagemPropria = {
+    ...extrairCartoesWpp(mensagem),
     id: idNormalizado,
     nome,
     arquivada: false,

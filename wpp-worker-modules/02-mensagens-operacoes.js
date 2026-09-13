@@ -1,3 +1,4 @@
+const { extrairCartoesWpp, localizacao: validarLocalizacao } = require('./scripts/cartoes-mensagem');
 function extrairIdMensagemWpp(valor) {
   if (!valor) {
     return null;
@@ -456,6 +457,7 @@ function emitirMensagemEnviadaWpp({
   mediaPath = null,
   ack = null,
   resposta = null,
+  cartoes = {},
 }) {
   const idMensagem = registrarEnvioWpp(idRaw, conversaId);
 
@@ -474,6 +476,7 @@ function emitirMensagemEnviadaWpp({
     idMensagemWpp: serializarId(idRaw) || null,
     resposta: normalizarRespostaWpp(resposta),
     texto: String(texto || ""),
+    ...cartoes,
     tipo,
     mime,
     fileName,
@@ -1752,7 +1755,7 @@ async function enviarTextoWpp(conversaId, texto, resposta = null, idLocalEnvio =
   const resultado = await client.sendText(
     chatId,
     conteudo,
-    quotedMsg ? { quotedMsg } : undefined,
+    { ...(quotedMsg ? { quotedMsg } : {}), linkPreview: true },
   );
 
   const idRaw = resultado?.id || resultado?.key?.id || resultado?._serialized;
@@ -1768,9 +1771,14 @@ async function enviarTextoWpp(conversaId, texto, resposta = null, idLocalEnvio =
     tipo: "texto",
     ack: resultado?.ack,
     resposta: respostaNormalizada,
+    cartoes: extrairCartoesWpp(resultado),
   });
 
   const statusEntrega = mensagensEnviadasWpp.get(extrairIdMensagemWpp(idRaw))?.statusEntrega || normalizarAckWpp(resultado?.ack);
+  // Recupera o modelo com a previa gerada, sem repetir o envio em caso de erro.
+  if (/https?:\/\//i.test(conteudo) && !extrairCartoesWpp(resultado).previaLink) {
+    void publicarCartoesEnviadosWpp(origem, idRaw, conteudo, 'texto');
+  }
   if (idLocalEnvio) {
     enviar('envio-texto-estado', { conversaId, idLocalEnvio, estado: 'concluido',
       idMensagem: extrairIdMensagemWpp(idRaw), statusEntrega });
@@ -2220,6 +2228,46 @@ function mensagemPertenceConversaHistoricoPerfilWpp(mensagem, alvos) {
   return idsMensagem.fallback.some(corresponde);
 }
 
+async function publicarCartoesEnviadosWpp(conversaId, idRaw, texto, tipo, cartoes = {}) {
+  if (typeof client?.getMessageById !== 'function') return;
+  for (const espera of [0, 1200, 3000]) {
+    if (espera) await new Promise(resolve => setTimeout(resolve, espera));
+    try {
+      const msg = await client.getMessageById(serializarId(idRaw));
+      const extraidos = extrairCartoesWpp(msg || {});
+      if (extraidos.localizacao || extraidos.previaLink) {
+        emitirMensagemEnviadaWpp({conversaId,idRaw,texto,tipo,ack:msg.ack,cartoes:{...cartoes,...extraidos}});
+        return;
+      }
+    } catch {}
+  }
+}
+
+async function enviarLocalizacaoWpp(dados = {}) {
+  const ponto = validarLocalizacao(dados.localizacao);
+  if (!ponto) throw new Error('Informe coordenadas validas.');
+  if (typeof client?.sendLocation !== 'function') throw new Error('WhatsApp ainda nao conectado.');
+  const { origem, chatId } = await resolverChatIdParaEnvio(dados.conversaId);
+  const r = await client.sendLocation(chatId, {lat:ponto.latitude,lng:ponto.longitude,name:ponto.nome,address:ponto.endereco});
+  const idRaw = r?.id;
+  if (!extrairIdMensagemWpp(idRaw)) throw new Error('Envio nao confirmado. Confira a conversa antes de tentar novamente.');
+  const cartoes = {localizacao:ponto};
+  emitirMensagemEnviadaWpp({conversaId:origem,idRaw,texto:'📍 Localização',tipo:'localizacao',ack:r.ack,cartoes});
+  void publicarCartoesEnviadosWpp(origem,idRaw,'📍 Localização','localizacao',cartoes);
+  await desarquivarAposEnvio(origem, chatId);
+  return {idMensagem:extrairIdMensagemWpp(idRaw),statusEntrega:normalizarAckWpp(r.ack)};
+}
+
+async function recuperarCartoesConversaWpp(dados = {}) {
+  if(typeof client?.getMessages !== 'function') throw new Error('WhatsApp ainda nao conectado.');
+  const {origem,chatId}=await resolverChatIdParaEnvio(dados.conversaId);
+  const lista=await client.getMessages(chatId,{count:600});
+  return {mensagens:(Array.isArray(lista)?lista:[]).map(m=>{
+    const msg=normalizarItemHistoricoPerfilWpp(m,origem);
+    return msg && (msg.localizacao || msg.previaLink) ? {id:origem,...msg} : null;
+  }).filter(Boolean)};
+}
+
 function normalizarItemHistoricoPerfilWpp(mensagem, conversaId) {
   if (!mensagem || mensagemRecebidaIgnoravelWpp(mensagem)) {
     return null;
@@ -2244,6 +2292,7 @@ function normalizarItemHistoricoPerfilWpp(mensagem, conversaId) {
     idMensagem,
     idMensagemWpp,
     texto: textoMensagemRecebidaWpp(mensagem, tipo),
+    ...extrairCartoesWpp(mensagem),
     tipo,
     mime: mensagem?.mimetype || null,
     fileName: mensagem?.filename || mensagem?.fileName || null,

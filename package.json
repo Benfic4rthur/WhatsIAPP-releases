@@ -1,9 +1,9 @@
 {
   "name": "whatsiapp",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "main": "index.js",
   "scripts": {
-    "test": "node --check index.js && node --check whatsapp-worker.js && node --check wpp-worker.js && node --check renderer-modules/anexos.js && node --check renderer-modules/audio.js && node --check renderer-modules/eventos-whatsapp.js && node --check renderer-modules/lista-conversas.js && node --check renderer-modules/renderizacao-mensagens.js && node --check renderer-modules/compositor-mensagens.js && node scripts/testar-status-entrega.js && node scripts/testar-midias.js",
+    "test": "node --check index.js && node --check whatsapp-worker.js && node --check wpp-worker.js && node --check renderer-modules/anexos.js && node --check renderer-modules/audio.js && node --check renderer-modules/eventos-whatsapp.js && node --check renderer-modules/lista-conversas.js && node --check renderer-modules/renderizacao-mensagens.js && node --check renderer-modules/compositor-mensagens.js && node scripts/testar-status-entrega.js && node scripts/testar-midias.js && node scripts/testar-cartoes.js",
     "start": "electron .",
     "doctor": "node scripts/diagnostico-ambiente.js",
     "clean:dist": "node scripts/limpar-dist-local.js",
@@ -48,12 +48,25 @@
       "output": "dist"
     },
     "files": [
-      "**/*",
+      "*.js",
+      "app.html",
+      "package.json",
+      "style.css",
+      "assets/**/*",
+      "renderer-modules/**/*.js",
+      "wpp-worker-modules/**/*.js",
+      "styles/**/*.css",
+      "scripts/**/*.js",
+      "testador-mestre/**/*",
       "!dist/**/*",
       "!tokens/**/*",
       "!.wwebjs_auth/**/*",
       "!.wwebjs_cache/**/*",
-      "!build/wppconnect-chrome/**/*"
+      "!build/wppconnect-chrome/**/*",
+      "!**/storageState.json",
+      "!**/creds.json",
+      "!**/conversas.json",
+      "!**/.env*"
     ],
     "win": {
       "icon": "assets/icon.ico",
@@ -67,7 +80,10 @@
         "dmg",
         "zip"
       ],
-      "category": "public.app-category.business"
+      "category": "public.app-category.business",
+      "identity": "-",
+      "hardenedRuntime": false,
+      "notarize": false
     },
     "dmg": {
       "title": "WhatsIAPP",

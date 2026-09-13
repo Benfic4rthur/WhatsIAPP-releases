@@ -25,6 +25,12 @@ function registrarTestesExpandidos(ctx = {}) {
   }
 
   const raizProjeto = path.join(__dirname, "..");
+  implementar('TM-F017', 'rapido', async () => {
+    try {
+      const resultado = await require('../scripts/testar-cartoes').testarCartoes();
+      return pass('Cartoes validados com dados sinteticos, sem mensagens reais.', resultado);
+    } catch (erro) { return fail(erro.message); }
+  });
 
   function esperar(ms) {
     return new Promise((resolve) =>

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="pt-BR"><meta charset="utf-8"><title>Prévia local — WhatsIAPP</title>
+<link rel="stylesheet" href="../styles/10-whatsapp-layout.css">
+<style>
+body {margin:0;background:#0b161b;color:#e9edef;font:15px system-ui;padding:26px;box-sizing:border-box;overflow:auto}
+h1 {font-size:22px;margin:0 0 6px}p.intro {color:#99afb4;margin-bottom:24px}
+main {display:grid;grid-template-columns:1fr 1fr;gap:20px}
+section {background:#142329;border-radius:14px;padding:18px}h2 {font-size:13px;font-weight:500;color:#9ab5bc;margin:0 0 12px}
+.cartao-mensagem {width:100%;max-width:430px}.cartao-mensagem img {height:180px}
+</style>
+<h1>Localização e links · teste local</h1><p class="intro">Dados fictícios. Estes cartões usam o componente real do aplicativo.</p><main id="casos"></main>
+<script>
+(async()=>{
+const {ipcRenderer}=require('electron'),assert=require('node:assert/strict'),fs=require('fs'),path=require('path');
+try {
+  const {criarCartaoMensagem,abrirDialogoLocalizacao}=require('./../renderer-modules/cartoes-mensagem');
+  const sharp=require('sharp');
+  const svg='<svg xmlns="http://www.w3.org/2000/svg" width="680" height="300"><rect width="680" height="300" fill="#2b424b"/><path d="M0 60 L680 240 M230 0 L380 300 M550 0 L200 300" stroke="#718992" stroke-width="22"/><circle cx="340" cy="150" r="23" fill="#ef5350"/><circle cx="340" cy="150" r="7" fill="white"/><text x="20" y="278" fill="white" font-family="sans-serif" font-size="17">Mapa fictício · teste visual</text></svg>';
+  const mapa='data:image/png;base64,'+(await sharp(Buffer.from(svg)).png().toBuffer()).toString('base64');
+  const logo='data:image/png;base64,'+(await sharp(path.join(__dirname,'../assets/logo.png')).resize(400,200,{fit:'contain',background:'#0b161b'}).png().toBuffer()).toString('base64');
+  const abertos=[];const shell={openExternal:async url=>abertos.push(url)};
+  const lista=[
+    ['Localização recebida · com miniatura',{localizacao:{latitude:-23.5505,longitude:-46.6333,nome:'Ponto de encontro',endereco:'Praça de exemplo',miniatura:mapa}}],
+    ['Link enviado · com prévia',{minha:true,previaLink:{url:'https://example.com/canal',titulo:'Canal de demonstração',descricao:'Imagem, título, descrição e endereço preservados na mensagem.',miniatura:logo}}],
+    ['Localização enviada · sem miniatura',{minha:true,localizacao:{latitude:0,longitude:0,nome:'Ponto informado',endereco:'Coordenadas válidas, incluindo zero'}}],
+    ['Link recebido · sem imagem',{previaLink:{url:'https://example.com/',titulo:'Uma página sem imagem',descricao:'O cartão mantém o título e o link clicável.'}}],
+  ];
+  for(const [nome,msg] of lista){const section=document.createElement('section');if(msg.minha)section.className='minha';const h=document.createElement('h2');h.textContent=nome;section.appendChild(h);const card=criarCartaoMensagem(document,shell,msg);assert(card);section.appendChild(card);document.getElementById('casos').appendChild(section);card.click();}
+  assert.equal(abertos.length,4);assert(abertos[0].includes('-23.5505'));assert.equal(abertos[1],'https://example.com/canal');assert.equal(document.querySelectorAll('.cartao-mensagem img').length,2);
+  assert.equal(criarCartaoMensagem(document,shell,{texto:'https://example.com'}),null);
+  assert.equal(criarCartaoMensagem(document,shell,{previaLink:{url:'javascript:alert(1)',titulo:'Teste'}}),null);
+  const malicioso=criarCartaoMensagem(document,shell,{previaLink:{url:'https://example.com',titulo:'<img src=x onerror=alert(1)>'}});assert.equal(malicioso.querySelectorAll('img').length,0);
+  const invocacoes=[];
+  abrirDialogoLocalizacao({document,ipcRenderer:{invoke:async(...args)=>{invocacoes.push(args);return {ok:true}}},conversaId:'teste',nomeConversa:'Contato de teste'});
+  document.querySelector('[name=latitude]').value='999';document.querySelector('[name=longitude]').value='0';document.querySelector('form').dispatchEvent(new Event('submit',{cancelable:true}));assert.equal(invocacoes.length,0);
+  document.querySelector('[name=latitude]').value='-23,55';document.querySelector('form').dispatchEvent(new Event('submit',{cancelable:true}));
+  await new Promise(resolve=>setTimeout(resolve,10));assert.equal(invocacoes.length,1);assert.equal(invocacoes[0][1].localizacao.latitude,-23.55);assert.equal(document.querySelector('.localizacao-overlay'),null);
+  await Promise.all([...document.images].map(i=>i.decode().catch(()=>{})));
+  ipcRenderer.send('teste-cartoes-pronto',{ok:true,casos:lista.length,cliques:abertos.length,formulario:'PASS'});
+}catch(e){ipcRenderer.send('teste-cartoes-pronto',{ok:false,erro:e.stack});}
+})();
+</script></html>

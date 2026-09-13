@@ -1889,6 +1889,7 @@ function detectarVisualizacaoUnica(message) {
   return null;
 }
 
+const { extrairCartoesBaileys, mesclarCartoes } = require('./scripts/cartoes-mensagem');
 function interpretarMensagem(message) {
   const visualizacaoUnica = detectarVisualizacaoUnica(message);
 
@@ -1904,7 +1905,7 @@ function interpretarMensagem(message) {
   }
 
   if (msg.extendedTextMessage?.text) {
-    return { tipo: "texto", texto: msg.extendedTextMessage.text };
+    return { tipo: "texto", texto: msg.extendedTextMessage.text, ...extrairCartoesBaileys(msg) };
   }
 
   if (msg.imageMessage) {
@@ -1949,7 +1950,7 @@ function interpretarMensagem(message) {
   }
 
   if (msg.locationMessage) {
-    return { tipo: "localizacao", texto: "📍 Localização" };
+    return { tipo: "localizacao", texto: "📍 Localização", ...extrairCartoesBaileys(msg) };
   }
 
   if (msg.contactMessage) {
@@ -2484,6 +2485,9 @@ async function adicionarMensagem(mensagem, emitir = false, extras = {}) {
       );
 
       if (existente) {
+        const cartoesAntes = JSON.stringify(mesclarCartoes(existente));
+        Object.assign(existente, mesclarCartoes(existente, interpretada));
+        if(cartoesAntes !== JSON.stringify(mesclarCartoes(existente))) salvarConversas();
         const respostaAnterior = JSON.stringify(existente.resposta || null);
         const identidadeAnterior = JSON.stringify({
           participant: existente.participant || null,
@@ -2524,7 +2528,7 @@ async function adicionarMensagem(mensagem, emitir = false, extras = {}) {
 
         if (
           emitir &&
-          (respostaAnterior !== respostaNova ||
+          (cartoesAntes !== JSON.stringify(mesclarCartoes(existente)) || respostaAnterior !== respostaNova ||
             identidadeAnterior !== identidadeNova)
         ) {
           enviar("mensagem", {
@@ -2554,6 +2558,7 @@ async function adicionarMensagem(mensagem, emitir = false, extras = {}) {
     const item = {
       idMensagem,
       texto: interpretada.texto,
+      ...mesclarCartoes(interpretada),
       tipo: interpretada.tipo,
       mime: interpretada.mime || null,
       fileName: interpretada.fileName || null,
@@ -5197,6 +5202,11 @@ function importarHistoricoNormalizadoWpp(dados = {}) {
 
     if (existente) {
       let mudou = false;
+      const cartoes = mesclarCartoes(existente, recebida);
+      if (JSON.stringify(mesclarCartoes(existente)) !== JSON.stringify(cartoes)) {
+        Object.assign(existente, cartoes);
+        mudou = true;
+      }
 
       const preencher = (campo, valor) => {
         if (
@@ -5245,6 +5255,7 @@ function importarHistoricoNormalizadoWpp(dados = {}) {
       idMensagem,
       idMensagemWpp: recebida?.idMensagemWpp || null,
       texto: String(recebida?.texto || ""),
+      ...mesclarCartoes(recebida),
       tipo: String(recebida?.tipo || "texto"),
       mime: recebida?.mime || null,
       fileName: recebida?.fileName || null,

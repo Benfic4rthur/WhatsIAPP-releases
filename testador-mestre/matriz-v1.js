@@ -1,5 +1,13 @@
 const MATRIZ_TESTADOR_MESTRE_V1 = [
   {
+    "id": "TM-F017",
+    "tipo": "AUTO",
+    "risco": "R0",
+    "nome": "Cartoes de localizacao e links",
+    "esperado": "recebimento, envio nativo, mesclagem e atualizacao tardia sem duplicar notificacoes",
+    "secao": "F. ANEXOS, MIDIA, AUDIO, FIGURINHAS E CONTATO"
+  },
+  {
     "id": "TM-A001",
     "tipo": "AUTO",
     "risco": "R0",
