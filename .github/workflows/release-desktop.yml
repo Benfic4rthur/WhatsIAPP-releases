@@ -1,0 +1,204 @@
+name: Release desktop
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-desktop
+  cancel-in-progress: false
+
+jobs:
+  windows-x64:
+    name: Windows x64
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chrome for Puppeteer
+        run: npx puppeteer browsers install chrome
+
+      - name: Run automated tests
+        run: npm test
+
+      - name: Test media recovery and recent history
+        run: node scripts/testar-sincronizacao-recente.js
+
+      - name: Test Windows packaging
+        run: npm run test:windows-packaging
+
+      - name: Build Windows x64 release files
+        run: npm run dist:win
+
+      - name: Upload Windows release files
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-windows-x64
+          path: |
+            dist/windows/*.exe
+            dist/windows/*.yml
+            dist/windows/*.blockmap
+          if-no-files-found: error
+          retention-days: 5
+          compression-level: 0
+
+  macos-arm64:
+    name: macOS Apple Silicon
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run automated tests
+        run: npm test
+
+      - name: Test media recovery and recent history
+        run: node scripts/testar-sincronizacao-recente.js
+
+      - name: Install Chrome for Puppeteer
+        run: npx puppeteer browsers install chrome
+
+      - name: Prepare packaged Chrome
+        run: npm run prepare:chrome
+
+      - name: Prepare macOS icon
+        run: npm run prepare:icon
+
+      - name: Build macOS arm64 release files
+        run: npx electron-builder --mac --arm64 --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Verify macOS release package
+        run: node scripts/verificar-release.js
+
+      - name: Upload macOS release files
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-macos-arm64
+          path: |
+            dist/*.dmg
+            dist/*.zip
+            dist/*.blockmap
+            dist/latest-mac.yml
+          if-no-files-found: error
+          retention-days: 5
+          compression-level: 0
+
+  publish:
+    name: Publish GitHub release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - windows-x64
+      - macos-arm64
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Windows release files
+        uses: actions/download-artifact@v5
+        with:
+          name: release-windows-x64
+          path: release-assets/windows
+
+      - name: Download macOS release files
+        uses: actions/download-artifact@v5
+        with:
+          name: release-macos-arm64
+          path: release-assets/macos
+
+      - name: Verify combined release files
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f release-assets/windows/latest.yml
+          find release-assets/windows -maxdepth 1 -type f -name 'WhatsIAPP-Setup-*.exe' -print -quit | grep -q .
+          test -f release-assets/macos/latest-mac.yml
+          find release-assets/macos -maxdepth 1 -type f -name '*.dmg' -print -quit | grep -q .
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            release-assets/windows/*.exe
+            release-assets/windows/*.yml
+            release-assets/windows/*.blockmap
+            release-assets/macos/*.dmg
+            release-assets/macos/*.zip
+            release-assets/macos/*.blockmap
+            release-assets/macos/latest-mac.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Keep only the current GitHub release after successful publication
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const repo = { owner: context.repo.owner, repo: context.repo.repo };
+            const currentTag = context.ref.replace('refs/tags/', '');
+            const { data: current } = await github.rest.repos.getReleaseByTag({ ...repo, tag: currentTag });
+
+            const hasWindowsInstaller = current.assets.some(a => /^WhatsIAPP-Setup-.*-x64\.exe$/i.test(a.name));
+            const hasWindowsMetadata = current.assets.some(a => a.name === 'latest.yml');
+            const hasMacInstaller = current.assets.some(a => a.name.endsWith('.dmg'));
+            const hasMacMetadata = current.assets.some(a => a.name === 'latest-mac.yml');
+
+            if (current.draft || !hasWindowsInstaller || !hasWindowsMetadata || !hasMacInstaller || !hasMacMetadata) {
+              throw new Error('Release atual incompleta; releases e tags anteriores preservadas.');
+            }
+
+            const releases = await github.paginate(
+              github.rest.repos.listReleases,
+              { ...repo, per_page: 100 }
+            );
+
+            for (const release of releases.filter(r => r.tag_name !== currentTag)) {
+              await github.rest.repos.deleteRelease({
+                ...repo,
+                release_id: release.id
+              });
+              core.info('Release ' + release.tag_name + ' removida.');
+            }
+
+            const tags = await github.paginate(
+              github.rest.repos.listTags,
+              { ...repo, per_page: 100 }
+            );
+
+            for (const tag of tags.filter(
+              t => /^v\d+\.\d+\.\d+$/.test(t.name) && t.name !== currentTag
+            )) {
+              await github.rest.git.deleteRef({
+                ...repo,
+                ref: 'tags/' + tag.name
+              });
+              core.info('Tag ' + tag.name + ' removida.');
+            }
