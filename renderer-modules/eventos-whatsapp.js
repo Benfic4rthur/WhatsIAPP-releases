@@ -1,5 +1,6 @@
 const { criarRegistroStatus } = require('../scripts/status-entrega');
 const { mesclarCartoes } = require('../scripts/cartoes-mensagem');
+const { reconciliarReferenciaMidia } = require('../scripts/referencia-midia');
 function criarModuloEventosWhatsapp(deps = {}) {
   const {
     ipcRenderer,
@@ -809,6 +810,18 @@ function criarModuloEventosWhatsapp(deps = {}) {
       overlay.style.display = "none";
     }
   });
+  ipcRenderer.on('midia-disponivel', (_, dados) => {
+    const conversa = conversas[dados?.id];
+    const msg = conversa?.mensagens?.find(m => m.idMensagem === dados.idMensagem);
+    if (!msg || msg.apagadaParaTodos || msg.tipo !== 'imagem' || conversa.trancada) return;
+    const referencia = reconciliarReferenciaMidia(dados);
+    if (!referencia.mediaUrl) return;
+    Object.assign(msg, referencia, { erroMidia: null });
+    const url = new URL(msg.mediaUrl);
+    url.searchParams.set('disponivel', String(Date.now()));
+    msg.mediaUrl = url.href;
+    if (obterConversaAtual() === conversa.id) renderMensagens();
+  });
   ipcRenderer.on("conversas-iniciais", (_, dados) => {
     const conversaAtualAntesSnapshot = String(
       obterConversaAtual?.() || "",
@@ -906,23 +919,6 @@ function criarModuloEventosWhatsapp(deps = {}) {
             ? anterioresPorId.get(String(msg.idMensagem))
             : null;
           const persistida = recuperarMidiaEnviadaLocal(msg?.idMensagem);
-          const mediaPath =
-            msg?.mediaPath ||
-            anteriorMsg?.mediaPath ||
-            persistida?.mediaPath ||
-            null;
-          let mediaUrl =
-            msg?.mediaUrl ||
-            anteriorMsg?.mediaUrl ||
-            persistida?.mediaUrl ||
-            null;
-          if (!mediaUrl && mediaPath) {
-            try {
-              if (fs.existsSync(mediaPath)) {
-                mediaUrl = pathToFileURL(mediaPath).href;
-              }
-            } catch {}
-          }
           return {
             ...msg,
             ...mesclarCartoes(anteriorMsg || {}, msg),
@@ -936,8 +932,7 @@ function criarModuloEventosWhatsapp(deps = {}) {
               anteriorMsg?.fileName ||
               persistida?.fileName ||
               null,
-            mediaPath,
-            mediaUrl,
+            ...reconciliarReferenciaMidia(msg, anteriorMsg, persistida),
           };
         });
       const idsSnapshot = new Set(
@@ -952,30 +947,18 @@ function criarModuloEventosWhatsapp(deps = {}) {
           idsSnapshot.add(idTombstone);
         }
       }
-      const maiorTimestampSnapshot = mensagensMescladas.reduce(
-        (maior, msg) => Math.max(maior, Number(msg?.timestamp || 0) || 0),
-        0,
-      );
-      const agoraSegundosSnapshot = Math.floor(Date.now() / 1000);
       for (const msg of anteriores) {
         const idMensagem = String(msg?.idMensagem || "");
         if (!idMensagem || idsSnapshot.has(idMensagem)) {
           continue;
         }
-        const timestampAnterior = Number(msg?.timestamp || 0) || 0;
-        const ehAudioLocal = idMensagem.startsWith("local-audio-");
         if (msg.envioTextoLocal && enviosTextoLocais.has(idMensagem)) {
           mensagensMescladas.push(enviosTextoLocais.get(idMensagem));
           idsSnapshot.add(idMensagem);
           continue;
         }
-        const ehMensagemRecenteForaDoSnapshot =
-          timestampAnterior > 0 &&
-          timestampAnterior >= maiorTimestampSnapshot &&
-          agoraSegundosSnapshot - timestampAnterior <= 180;
-        if (!ehAudioLocal && !ehMensagemRecenteForaDoSnapshot) {
-          continue;
-        }
+        // Snapshots de sincronizacao sao parciais. Ausencia nao e exclusao.
+        // Limpezas/exclusoes explicitas continuam filtradas abaixo.
         const restaurada = aplicarEstadoMensagemApagadaPersistida(
           conversa.id,
           msg,
@@ -1026,7 +1009,7 @@ function criarModuloEventosWhatsapp(deps = {}) {
         trancadaWhatsapp,
         trancada: trancadaEfetiva,
         timestamp: conversa.timestamp || 0,
-        mensagens: ordenarMensagensPorTimestamp(mensagensMescladas),
+        mensagens: ordenarMensagensPorTimestamp(mensagensMescladas).filter((m, i, lista) => i >= lista.length - 600 || m.envioTextoLocal || String(m.idMensagem || '').startsWith('local-')),
         fotoPerfilUrl: anterior?.fotoPerfilUrl || null,
         fotoPerfilTentada: anterior?.fotoPerfilTentada || false,
         fotoPerfilFalhas: Number(anterior?.fotoPerfilFalhas || 0) || 0,
@@ -1392,18 +1375,9 @@ function criarModuloEventosWhatsapp(deps = {}) {
         mensagemExistente.horario || dados.horario || null;
       mensagemExistente.timestamp =
         mensagemExistente.timestamp || dados.timestamp || 0;
-      mensagemExistente.mediaPath =
-        dados.mediaPath ||
-        mensagemExistente.mediaPath ||
-        midiaPersistida?.mediaPath ||
-        null;
-      mensagemExistente.mediaUrl =
-        dados.mediaUrl ||
-        mensagemExistente.mediaUrl ||
-        midiaPersistida?.mediaUrl ||
-        null;
       mensagemExistente.rawBase64 =
         dados.rawBase64 || mensagemExistente.rawBase64 || null;
+      Object.assign(mensagemExistente, reconciliarReferenciaMidia(dados, mensagemExistente, midiaPersistida));
       mensagemExistente.statusEntrega = reconciliarStatus(conversa.id, mensagemExistente, dados.statusEntrega);
       mensagemExistente.editada =
         !!dados.editada || !!mensagemExistente.editada;

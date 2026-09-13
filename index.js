@@ -1668,6 +1668,21 @@ function registrarWorker(worker, tipoWorker) {
 
       if (tipoWorker === "wpp" && mensagem.evento === "mensagem") {
         const dadosMensagem = mensagem.dados || {};
+        if (dadosMensagem.tipo === 'imagem' && dadosMensagem.mediaPath) {
+          const valida = !nativeImage.createFromPath(dadosMensagem.mediaPath).isEmpty();
+          if (valida) {
+            void solicitarAoWorker('baileys', 'importar-historico-wpp', { mensagens: [dadosMensagem] }, 15000).then(() => {
+              const chave = chaveCanonica(dadosMensagem.id);
+              if (estadoPrivacidadeConhecido.has(chave) && !estadoTrancamento.get(chave)) {
+                enviarParaTela('midia-disponivel', dadosMensagem);
+              }
+            }).catch(() => {});
+          } else {
+            console.warn(`[MIDIA CACHE] IMAGEM_INVALIDA | id=${dadosMensagem.idMensagem}`);
+            dadosMensagem.mediaPath = null;
+            dadosMensagem.mediaUrl = null;
+          }
+        }
         if (dadosMensagem.localizacao || dadosMensagem.previaLink) {
           void solicitarAoWorker('baileys','importar-historico-wpp',{mensagens:[dadosMensagem]},15000).catch(() => {});
         }
@@ -2123,6 +2138,7 @@ async function sincronizarHistoricoGapWpp() {
     let conversasAlteradas = 0;
     let rodadas = 0;
     let restantes = 0;
+    let consultasFalharam = 0;
 
     console.log(
       `[HISTORICO GAP] INICIO_RAPIDO | conversasLocais=${bases.length}`,
@@ -2155,6 +2171,7 @@ async function sincronizarHistoricoGapWpp() {
       const processados = Array.isArray(resultadoWpp?.processados)
         ? resultadoWpp.processados
         : [];
+      consultasFalharam += Number(resultadoWpp?.resumo?.falhas || 0);
 
       restantes = Math.max(
         0,
@@ -2232,13 +2249,13 @@ async function sincronizarHistoricoGapWpp() {
     // Uma execucao cobre ate 162 chats alterados, muito acima do volume
     // normal entre duas aberturas. Encerramos o ciclo para nao repetir carga
     // pesada durante a mesma sessao.
-    historicoGapWppExecutado = true;
+    historicoGapWppExecutado = restantes <= 0 && consultasFalharam === 0;
 
     console.log(
       `[HISTORICO GAP] CONCLUIDO | rodadas=${rodadas} | importadas=${importadas} | ` +
         `atualizadas=${atualizadas} | duplicadas=${duplicadas} | ` +
         `ignoradas=${ignoradas} | conversas=${conversasAlteradas} | ` +
-        `restantes=${restantes}`,
+        `restantes=${restantes} | falhas=${consultasFalharam} | completo=${historicoGapWppExecutado}`,
     );
 
     finalizarSincronizacaoMensagensSilenciosa("historico-gap-concluido");
@@ -8908,6 +8925,34 @@ ipcMain.handle("mostrar-notificacao-mensagem", async (_, dados = {}) => {
   }
 });
 
+const historicosRecentesEmAndamento = new Map();
+ipcMain.handle('sincronizar-conversa-recente', async (_, dados = {}) => {
+  const conversaId = String(dados.conversaId || '').trim();
+  const chave = chaveCanonica(conversaId);
+  if (!chave || !estadoPrivacidadeConhecido.has(chave)) return { ok: false, aguardandoConexao: true, erro: 'Aguardando confirmação da conversa.' };
+  if (historicosRecentesEmAndamento.has(chave)) return historicosRecentesEmAndamento.get(chave);
+  const trabalho = (async () => {
+    let total = 0;
+    const conhecidos = new Set((conversasBase.find(c => chaveCanonica(c.id) === chave)?.mensagens || []).map(m => m.idMensagem));
+    for (const limite of [200, 600]) {
+      const resultado = await solicitarAoWorker('wpp', 'buscar-historico-recente-conversa', { conversaId, limite }, 35000);
+      if (!resultado?.ok) return resultado;
+      const lista = resultado.mensagens || [];
+      for (let i = 0; i < lista.length; i += 200) {
+        const importacao = await solicitarAoWorker('baileys', 'importar-historico-wpp', { mensagens: lista.slice(i, i + 200) }, 30000);
+        if (!importacao?.ok) return { ok: false, erro: importacao?.erro || 'Não foi possível importar as mensagens.' };
+        total += Number(importacao.importadas || 0);
+        enviarParaTela('historico-conversa-progresso', { conversaId, importadas: total });
+      }
+      if (!resultado.limiteAtingido || lista.some(m => conhecidos.has(m.idMensagem)) || limite === 600) {
+        return { ok: true, importadas: total, janelaLimitada: resultado.limiteAtingido && !lista.some(m => conhecidos.has(m.idMensagem)) };
+      }
+    }
+  })();
+  historicosRecentesEmAndamento.set(chave, trabalho);
+  try { return await trabalho; } finally { historicosRecentesEmAndamento.delete(chave); }
+});
+
 ipcMain.handle("carregar-midia", async (_, dados = {}) => {
   const payloadOriginal = dados && typeof dados === "object" ? dados : {};
 
@@ -8918,7 +8963,7 @@ ipcMain.handle("carregar-midia", async (_, dados = {}) => {
     45000,
   );
 
-  if (resultadoBaileys?.ok) {
+  if (resultadoBaileys?.ok && !(payloadOriginal.recuperarImagem && resultadoBaileys.mediaPath && nativeImage.createFromPath(resultadoBaileys.mediaPath).isEmpty())) {
     return resultadoBaileys;
   }
 
@@ -8978,6 +9023,9 @@ ipcMain.handle("carregar-midia", async (_, dados = {}) => {
     90000,
   );
 
+  if (resultadoWpp?.ok && payloadOriginal.recuperarImagem && (!resultadoWpp.mediaPath || nativeImage.createFromPath(resultadoWpp.mediaPath).isEmpty())) {
+    return { ok: false, erro: 'Imagem ainda indisponível para exibição.' };
+  }
   if (resultadoWpp?.ok) {
     const persistida = await solicitarAoWorker(
       "baileys",

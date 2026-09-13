@@ -594,7 +594,13 @@ async function baixarMidiaMensagemRecebidaWpp(mensagem, idMensagem, tipo) {
     `${sanitizarNomeWpp(idMensagem)}_recebida_${nomeFinal}`,
   );
 
-  fs.writeFileSync(caminho, dados.buffer);
+  if (tipo === 'imagem') {
+    const temporario = caminho + `.part-${Date.now()}`;
+    fs.writeFileSync(temporario, dados.buffer);
+    fs.renameSync(temporario, caminho);
+  } else {
+    fs.writeFileSync(caminho, dados.buffer);
+  }
 
   return {
     mediaPath: caminho,

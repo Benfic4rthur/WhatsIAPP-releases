@@ -25,6 +25,12 @@ function registrarTestesExpandidos(ctx = {}) {
   }
 
   const raizProjeto = path.join(__dirname, "..");
+  implementar('TM-F018', 'rapido', async () => {
+    try {
+      const resultado = await require('../scripts/testar-sincronizacao-recente').testarSincronizacaoRecente();
+      return pass('Recuperacao e sincronizacao validadas com dados sinteticos.', resultado);
+    } catch (erro) { return fail(erro.message); }
+  });
   implementar('TM-F017', 'rapido', async () => {
     try {
       const resultado = await require('../scripts/testar-cartoes').testarCartoes();

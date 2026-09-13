@@ -4869,8 +4869,14 @@ moduloMidia = criarModuloMidia({
   moduloAudio,
   conversas,
   obterConversaAtual: () => conversaAtual,
+  recuperarImagem: carregarUmaMidia,
 });
 const { criarConteudoMidia } = moduloMidia;
+const sincronizacaoConversa = require('./renderer-modules/sincronizacao-conversa').criarSincronizacaoConversa({
+  document, ipcRenderer, obterConversaAtual: () => conversaAtual,
+  carregarMidias: carregarMidiasDaConversa,
+});
+moduloControleConversa.configurarIntegracoes({ sincronizacaoConversa });
 const {
   criarModuloRenderizacaoMensagens,
 } = require("./renderer-modules/renderizacao-mensagens.js");
@@ -4896,8 +4902,8 @@ moduloRenderizacaoMensagens = criarModuloRenderizacaoMensagens({
 function renderMensagens() {
   return moduloRenderizacaoMensagens?.renderMensagens?.();
 }
-async function carregarUmaMidia(conversa, msg) {
-  return moduloRenderizacaoMensagens?.carregarUmaMidia?.(conversa, msg);
+async function carregarUmaMidia(conversa, msg, opcoes) {
+  return moduloRenderizacaoMensagens?.carregarUmaMidia?.(conversa, msg, opcoes);
 }
 async function carregarMidiasDaConversa() {
   return moduloRenderizacaoMensagens?.carregarMidiasDaConversa?.();

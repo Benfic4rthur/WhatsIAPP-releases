@@ -693,6 +693,7 @@ function criarModuloControleConversa(deps = {}) {
     integracoes.fecharPerfilContato?.();
 
     definirConversaAtual?.(null);
+    integracoes.sincronizacaoConversa?.mostrar();
 
     if (integracoes.nomeChat) {
       integracoes.nomeChat.textContent = "Selecione uma conversa";
@@ -804,6 +805,7 @@ function criarModuloControleConversa(deps = {}) {
     }, 20);
 
     integracoes.carregarMidiasDaConversa?.();
+    void integracoes.sincronizacaoConversa?.atualizar(id);
 
     const modoIAAtual = obterModoIAAtual?.() || "manual";
 

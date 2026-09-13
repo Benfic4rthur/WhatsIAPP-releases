@@ -88,7 +88,14 @@ function criarModuloMidia({
   moduloAudio,
   conversas,
   obterConversaAtual,
+  recuperarImagem,
 }) {
+  const recuperacao = require('./recuperacao-imagem').criarRecuperacaoImagem({
+    obterMensagem: (c,id) => conversas[c]?.mensagens?.find(m => m.idMensagem === id),
+    estaVisivel: c => obterConversaAtual() === c,
+    recuperar: (c,msg) => recuperarImagem?.(conversas[c], msg, { mediaPathInvalido: msg.mediaPath, recuperarImagem: true }),
+  });
+  window.addEventListener('beforeunload', () => recuperacao.encerrar());
   function criarPlaceholderMidia(texto = "Carregando mídia...") {
     const div = document.createElement("div");
     div.className = "midia-placeholder";
@@ -686,6 +693,7 @@ function criarModuloMidia({
 
   function criarConteudoMidia(msg, conversa = null) {
     if (!msg.mediaUrl) {
+      if (msg.tipo === 'imagem' && msg.erroMidia) recuperacao.falhou(conversa?.id, msg.idMensagem);
       return criarPlaceholderMidia(
         msg.erroMidia ? msg.erroMidia : "Carregando mídia...",
       );
@@ -698,6 +706,16 @@ function criarModuloMidia({
       img.alt = msg.texto || "Imagem";
       img.loading = "lazy";
       img.style.cursor = "pointer";
+      img.addEventListener('load', () => {
+        recuperacao.concluir(conversa?.id, msg.idMensagem);
+        msg.erroMidia = null;
+      });
+      img.addEventListener('error', () => {
+        const esgotado = recuperacao.tentativas(conversa?.id, msg.idMensagem) >= 3;
+        const aviso = criarPlaceholderMidia(esgotado ? 'Imagem indisponível após 3 tentativas.' : 'Recuperando imagem… nova tentativa em 20 segundos.');
+        img.replaceWith(aviso);
+        recuperacao.falhou(conversa?.id, msg.idMensagem);
+      });
 
       img.addEventListener("click", () => abrirModalMidia(msg));
 

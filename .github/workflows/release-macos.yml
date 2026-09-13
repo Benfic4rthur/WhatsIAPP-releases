@@ -28,6 +28,8 @@ jobs:
         run: npm ci
       - name: Run automated tests
         run: npm test
+      - name: Test media recovery and recent history
+        run: node scripts/testar-sincronizacao-recente.js
       - name: Install Chrome for Puppeteer
         run: npx puppeteer browsers install chrome
       - name: Prepare packaged Chrome

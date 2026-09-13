@@ -121,6 +121,11 @@ async function responderSolicitacao(id, acao, dados) {
       return;
     }
 
+    if (acao === 'buscar-historico-recente-conversa') {
+      const resultado = await buscarHistoricoRecenteConversaWpp(dados || {});
+      parentPort.postMessage({ tipo: 'resposta', id, resultado });
+      return;
+    }
     if (acao === "buscar-historico-gap") {
       const resultado = await buscarHistoricoGapWpp(dados || {});
 

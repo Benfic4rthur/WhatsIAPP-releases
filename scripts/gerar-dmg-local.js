@@ -4,8 +4,8 @@
 const fs=require('fs'),os=require('os'),path=require('path'),crypto=require('crypto');
 const {execFileSync}=require('child_process');
 const raiz=path.resolve(__dirname,'..');
-const versao='1.0.13-local.1';
-const extras=['scripts/cartoes-mensagem.js','renderer-modules/cartoes-mensagem.js','scripts/testar-cartoes.js'];
+const versao='1.0.16-local.1';
+const extras=['scripts/referencia-midia.js','renderer-modules/recuperacao-imagem.js','renderer-modules/sincronizacao-conversa.js','scripts/testar-sincronizacao-recente.js'];
 const fontes=execFileSync('git',['ls-files','-z'],{cwd:raiz,encoding:'utf8'}).split('\0').filter(Boolean);
 const arquivos=[...new Set([...fontes,...extras])].filter(f=>!f.startsWith('.') && !f.startsWith('dist/') && !f.startsWith('build/'));
 const proibido=/(^|\/)(tokens|\.wwebjs_auth|\.wwebjs_cache|logs|cache|auth_info_baileys)(\/|$)|(^|\/)(creds|storageState|conversas)\.json$|\.session(?:$|-)|(^|\/)\.env(?:$|\.)/i;
@@ -42,7 +42,7 @@ const run=(cmd,args)=>execFileSync(cmd,args,{cwd:stage,env:ambiente,stdio:'inher
   if(suspeitos.length) throw new Error('Dados nao permitidos encontrados no pacote: '+suspeitos.join(', '));
   const pacote=JSON.parse(asar.extractFile(archive,'package.json'));
   if(!pacote.localTestBuild || pacote.version!==versao) throw new Error('Metadados do teste local incorretos.');
-  for(const f of arquivos.filter(f=>f.endsWith('.js') && !f.startsWith('scripts/aplicar-patches-whatsiapp-old'))){
+  for(const f of arquivos.filter(f=>/\.(js|css|html)$/.test(f) && !f.startsWith('scripts/aplicar-patches-whatsiapp-old'))){
     if(!asar.extractFile(archive,f).equals(fs.readFileSync(path.join(raiz,f)))) throw new Error('Fonte divergente no pacote: '+f);
   }
   const sha256=crypto.createHash('sha256').update(fs.readFileSync(dmg)).digest('hex');

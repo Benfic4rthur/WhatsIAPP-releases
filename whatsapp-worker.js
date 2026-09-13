@@ -2485,6 +2485,11 @@ async function adicionarMensagem(mensagem, emitir = false, extras = {}) {
       );
 
       if (existente) {
+        const recebeuMetadadosMidia = mensagemTemMidia(interpretada.tipo) && !existente.rawBase64;
+        if (recebeuMetadadosMidia) {
+          existente.rawBase64 = serializarMensagemBruta(mensagem);
+          salvarConversas();
+        }
         const cartoesAntes = JSON.stringify(mesclarCartoes(existente));
         Object.assign(existente, mesclarCartoes(existente, interpretada));
         if(cartoesAntes !== JSON.stringify(mesclarCartoes(existente))) salvarConversas();
@@ -2528,7 +2533,7 @@ async function adicionarMensagem(mensagem, emitir = false, extras = {}) {
 
         if (
           emitir &&
-          (cartoesAntes !== JSON.stringify(mesclarCartoes(existente)) || respostaAnterior !== respostaNova ||
+          (recebeuMetadadosMidia || cartoesAntes !== JSON.stringify(mesclarCartoes(existente)) || respostaAnterior !== respostaNova ||
             identidadeAnterior !== identidadeNova)
         ) {
           enviar("mensagem", {
@@ -2673,7 +2678,7 @@ async function processarHistorico(dados) {
   });
 }
 
-async function baixarMidiaDaMensagem(conversaId, idMensagem) {
+async function baixarMidiaDaMensagem(conversaId, idMensagem, opcoes = {}) {
   if (!sock || !baileysApi?.downloadMediaMessage) {
     throw new Error("WhatsApp ainda não está pronto.");
   }
@@ -2696,7 +2701,7 @@ async function baixarMidiaDaMensagem(conversaId, idMensagem) {
     throw new Error("Essa mensagem não possui mídia.");
   }
 
-  if (item.mediaPath && fs.existsSync(item.mediaPath)) {
+  if (item.mediaPath && item.mediaPath !== opcoes.mediaPathInvalido && fs.existsSync(item.mediaPath) && fs.statSync(item.mediaPath).size > 0) {
     return {
       mediaUrl: pathToFileURL(item.mediaPath).href,
       mediaPath: item.mediaPath,
@@ -2779,7 +2784,13 @@ async function baixarMidiaDaMensagem(conversaId, idMensagem) {
     `${sanitizarNomeArquivo(item.idMensagem || Date.now())}_${nomeFinal}`,
   );
 
-  fs.writeFileSync(caminho, buffer);
+  if (item.tipo === 'imagem') {
+    const temporario = caminho + `.part-${Date.now()}`;
+    fs.writeFileSync(temporario, buffer);
+    fs.renameSync(temporario, caminho);
+  } else {
+    fs.writeFileSync(caminho, buffer);
+  }
 
   item.mediaPath = caminho;
   salvarConversas();
@@ -5229,6 +5240,13 @@ function importarHistoricoNormalizadoWpp(dados = {}) {
       preencher("viewOnceKind", recebida.viewOnceKind);
       preencher("participant", recebida.participant);
       preencher("remoteJid", recebida.remoteJid);
+      if (recebida.tipo === 'imagem' && recebida.mediaPath && fs.existsSync(recebida.mediaPath) && fs.statSync(recebida.mediaPath).size > 0) {
+        if (existente.mediaPath !== recebida.mediaPath) {
+          existente.mediaPath = recebida.mediaPath;
+          existente.mediaUrl = pathToFileURL(recebida.mediaPath).href;
+          mudou = true;
+        }
+      }
 
       if (
         recebida.statusEntrega &&
@@ -5271,8 +5289,8 @@ function importarHistoricoNormalizadoWpp(dados = {}) {
         ? recebida?.statusEntrega || null
         : null,
       resposta: recebida?.resposta || null,
-      mediaPath: null,
-      mediaUrl: null,
+      mediaPath: recebida.tipo === 'imagem' && recebida.mediaPath && fs.existsSync(recebida.mediaPath) ? recebida.mediaPath : null,
+      mediaUrl: recebida.tipo === 'imagem' && recebida.mediaPath && fs.existsSync(recebida.mediaPath) ? pathToFileURL(recebida.mediaPath).href : null,
       rawBase64: null,
     });
 
@@ -5571,6 +5589,7 @@ async function responderSolicitacao(id, acao, dados) {
         const resultado = await baixarMidiaDaMensagem(
           dados.conversaId,
           dados.idMensagem,
+          dados,
         );
 
         parentPort.postMessage({

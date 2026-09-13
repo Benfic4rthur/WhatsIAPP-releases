@@ -1826,6 +1826,15 @@ async function enviarAnexoWpp(
       throw new Error("Envio de imagem indisponivel no WPPConnect.");
     }
 
+    // Copia duravel antes do envio: o renderer nao depende do arquivo escolhido
+    // (nem do PNG temporario da area de transferencia) depois da confirmacao.
+    garantirPastaMediaWpp();
+    const destinoImagem = path.join(pastaMediaWpp(), `imagem_enviada_${Date.now()}_${Math.random().toString(36).slice(2)}${path.extname(caminho) || '.jpg'}`);
+    const temporarioImagem = destinoImagem + '.part';
+    fs.copyFileSync(caminho, temporarioImagem);
+    if (fs.statSync(temporarioImagem).size === 0) throw new Error('Imagem local vazia.');
+    fs.renameSync(temporarioImagem, destinoImagem);
+    caminho = destinoImagem;
     resultado = await client.sendImage(
       chatId,
       caminho,

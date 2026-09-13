@@ -1,5 +1,13 @@
 const MATRIZ_TESTADOR_MESTRE_V1 = [
   {
+    "id": "TM-F018",
+    "tipo": "AUTO",
+    "risco": "R0",
+    "nome": "Recuperacao de imagem e historico recente",
+    "esperado": "retry limitado, cache coerente, consulta parcial segura e estado por conversa",
+    "secao": "F. ANEXOS, MIDIA, AUDIO, FIGURINHAS E CONTATO"
+  },
+  {
     "id": "TM-F017",
     "tipo": "AUTO",
     "risco": "R0",

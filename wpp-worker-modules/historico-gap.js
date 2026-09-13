@@ -338,11 +338,6 @@ async function buscarHistoricoGapWpp(dados = {}) {
         continue;
       }
 
-      processados.push({
-        id: conversaId,
-        timestampWpp: Number(item.timestampWpp || 0) || 0,
-      });
-
       chatsConsultados++;
 
       let lista = [];
@@ -377,6 +372,7 @@ async function buscarHistoricoGapWpp(dados = {}) {
       }
 
       if (!lista.length) {
+        falhas += erroUltimo ? 0 : 1;
         if (erroUltimo) {
           falhas++;
           console.warn(
@@ -388,8 +384,17 @@ async function buscarHistoricoGapWpp(dados = {}) {
         continue;
       }
 
+      const maiorRecebido = Math.max(...lista.map(m => timestampMensagemWpp(m.timestamp || m.t)));
+      if (maiorRecebido >= item.timestampWpp) {
+        processados.push({ id: conversaId, timestampWpp: item.timestampWpp });
+      } else {
+        falhas++;
+      }
+
       let adicionadasChat = 0;
-      const limiteInferior = Math.max(0, item.timestampLocal - 2);
+      // Importacao deduplica por ID: preservar toda a janela retornada preenche
+      // lacunas anteriores a uma mensagem mais nova que ja chegou ao vivo.
+      const limiteInferior = 0;
 
       for (const mensagem of lista) {
         const normalizada = normalizarMensagemHistoricoGapWpp(
@@ -464,4 +469,22 @@ async function buscarHistoricoGapWpp(dados = {}) {
     },
     processados,
   };
+}
+
+async function buscarHistoricoRecenteConversaWpp(dados = {}) {
+  if (!client || !fullReady || !prontidaoInicialFinalizada) {
+    return { ok: false, aguardandoConexao: true, erro: 'Aguardando conexão para atualizar mensagens.' };
+  }
+  const conversaId = normalizarId(dados.conversaId);
+  if (!conversaId) throw new Error('Conversa inválida.');
+  const resolucao = await candidatosOperacaoConversaWpp(conversaId);
+  const count = Math.min(600, Math.max(1, Number(dados.limite) || 200));
+  for (const chatId of resolucao.candidatos || []) {
+    const lista = await aguardarComTimeoutWpp(client.getMessages(chatId, { count }), 12000, null);
+    if (!Array.isArray(lista) || !lista.length) continue;
+    const mensagens = lista.map(m => normalizarMensagemHistoricoGapWpp(m, {}, conversaId)).filter(Boolean);
+    console.log(`[HISTORICO RECENTE] CONSULTA | conversa=${conversaId} | mensagens=${mensagens.length} | limite=${count}`);
+    return { ok: true, mensagens, limiteAtingido: lista.length >= count };
+  }
+  return { ok: false, erro: 'A consulta ainda não retornou mensagens. Tente novamente.' };
 }

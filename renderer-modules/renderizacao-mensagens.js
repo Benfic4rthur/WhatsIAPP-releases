@@ -858,7 +858,7 @@ function criarModuloRenderizacaoMensagens(dependencias = {}) {
     restaurarEstadoVisualDepoisDoRender(conversaId, estadoAnterior);
     manterFimDepoisDeImagemCarregar(conversaId, conversa, estadoAnterior);
   }
-  async function carregarUmaMidia(conversa, msg) {
+  async function carregarUmaMidia(conversa, msg, opcoes = {}) {
     const conversaId = String(conversa?.id || "").trim();
     const idMensagem = String(msg?.idMensagem || "").trim();
     const chave = `${conversaId}:${idMensagem}`;
@@ -870,6 +870,11 @@ function criarModuloRenderizacaoMensagens(dependencias = {}) {
       const resultado = await ipcRenderer.invoke("carregar-midia", {
         conversaId,
         idMensagem,
+        tipo: msg.tipo,
+        idMensagemWpp: msg.idMensagemWpp,
+        mime: msg.mime,
+        timestamp: msg.timestamp,
+        ...opcoes,
       });
 
       // A sincronizacao pode substituir a conversa e seus objetos enquanto o
@@ -892,6 +897,11 @@ function criarModuloRenderizacaoMensagens(dependencias = {}) {
         mensagemAtual.mime = resultado.mime || mensagemAtual.mime || null;
         mensagemAtual.fileName = resultado.fileName || mensagemAtual.fileName;
         mensagemAtual.erroMidia = null;
+        if (opcoes.recuperarImagem && mensagemAtual.mediaUrl) {
+          const url = new URL(mensagemAtual.mediaUrl);
+          url.searchParams.set('recuperacao', String(Date.now()));
+          mensagemAtual.mediaUrl = url.href;
+        }
       } else {
         mensagemAtual.erroMidia = resultado?.erro || "Mídia indisponível";
       }
