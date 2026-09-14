@@ -3,6 +3,7 @@
 const { app } = require("electron");
 const pacote = require("./package.json");
 const { criarDesktopUpdater } = require("./desktop-updater");
+const { registrarSessaoWhatsAppIpc } = require("./sessao-whatsapp");
 
 // Runtime-only compatibility switch. The legacy updater inside index.js checks
 // this flag. It is intentionally mutated only in the main-process module cache,
@@ -15,6 +16,7 @@ app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 
 const updater = criarDesktopUpdater();
 updater.registrarIpc();
+registrarSessaoWhatsAppIpc();
 
 let aplicacaoIniciada = false;
 
