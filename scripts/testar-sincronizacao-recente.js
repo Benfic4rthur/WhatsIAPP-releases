@@ -37,14 +37,16 @@ async function testarSincronizacaoRecente() {
   contexto.fullReady=false;r=await contexto.buscarHistoricoRecenteConversaWpp({conversaId:'c'});assert.equal(r.aguardandoConexao,true);
 
   const eventos={},texto={},botao={addEventListener(){}},barra={querySelector:s=>s==='span'?texto:botao,classList:{toggle(){}}};
+  const classesCorpo=new Set(),classListCorpo={toggle:(classe,ativa)=>ativa?classesCorpo.add(classe):classesCorpo.delete(classe)};
   let atual='a',resolverA,resolverB,invocacoes=0;
-  const ui=require('../renderer-modules/sincronizacao-conversa').criarSincronizacaoConversa({document:{getElementById:()=>barra},obterConversaAtual:()=>atual,
+  const ui=require('../renderer-modules/sincronizacao-conversa').criarSincronizacaoConversa({document:{getElementById:()=>barra,body:{classList:classListCorpo}},obterConversaAtual:()=>atual,
     ipcRenderer:{on:(e,fn)=>eventos[e]=fn,invoke:(_,d)=>{invocacoes++;return new Promise(resolve=>{if(d.conversaId==='a')resolverA=resolve;else resolverB=resolve;});}}});
   const a=ui.atualizar('a');await ui.atualizar('a');assert.equal(invocacoes,1);
   atual='b';const b=ui.atualizar('b');resolverA({ok:true,importadas:2});await a;assert(texto.textContent.includes('Buscando'));
   eventos['historico-conversa-progresso'](null,{conversaId:'a',importadas:20});assert(texto.textContent.includes('Buscando'));
   resolverB({ok:false,erro:'Erro simulado'});await b;assert.equal(texto.textContent,'Erro simulado');assert.equal(botao.disabled,false);
-  atual=null;ui.mostrar();assert.equal(barra.hidden,true);
+  assert.equal(classesCorpo.has('whatsiapp-sync-conversa-visivel'),true);
+  atual=null;ui.mostrar();assert.equal(barra.hidden,true);assert.equal(classesCorpo.has('whatsiapp-sync-conversa-visivel'),false);
   return {ok:true,midia:'PASS',historico:'PASS',indicador:'PASS'};
 }
 module.exports={testarSincronizacaoRecente};

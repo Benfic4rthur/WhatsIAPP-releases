@@ -1898,7 +1898,7 @@ body:not(.whatsiapp-ia-lateral-aberta) .ia {
     font-size: 11px;
     text-decoration: underline;
 }
-.sincronizacao-conversa { display:flex; align-items:center; gap:8px; flex:0 0 auto; padding:7px 16px; background:#14252b; color:#b8ccd2; font-size:12px; }
+.sincronizacao-conversa { position:relative; z-index:13; display:flex; align-items:center; gap:8px; flex:0 0 auto; padding:7px 16px; background:#14252b; color:#b8ccd2; font-size:12px; }
 .sincronizacao-conversa[hidden] { display:none; }
 .sincronizacao-conversa span { flex:1 1 auto; min-width:0; }
 .sincronizacao-conversa button { width:auto; flex:0 0 auto; margin:0; background:transparent; color:#65d4bc; border:1px solid #31564e; border-radius:5px; padding:3px 8px; cursor:pointer; }

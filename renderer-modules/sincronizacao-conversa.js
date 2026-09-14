@@ -5,7 +5,9 @@ function criarSincronizacaoConversa({ document, ipcRenderer, obterConversaAtual,
   const estados = new Map();
   function mostrar() {
     const estado = estados.get(obterConversaAtual());
-    barra.hidden = !estado || !!estado.oculto;
+    const visivel = !!estado && !estado.oculto;
+    barra.hidden = !visivel;
+    document.body?.classList?.toggle('whatsiapp-sync-conversa-visivel', visivel);
     if (!estado) return;
     texto.textContent = estado.texto;
     barra.classList.toggle('carregando', !!estado.ocupado);

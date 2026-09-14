@@ -222,6 +222,11 @@ body.whatsiapp-conversa-ativa:not(.whatsiapp-modo-assistido) .ia-status-compacto
     transform: translateY(0) scale(1);
 }
 
+/* A faixa de atualização do histórico tem prioridade enquanto estiver visível. */
+body.whatsiapp-sync-conversa-visivel .ia-status-compacto {
+    display: none;
+}
+
 .ia-status-compacto.ia-gerando::before {
     animation: iaStatusCompactoPulse 1.15s ease-in-out infinite;
 }
