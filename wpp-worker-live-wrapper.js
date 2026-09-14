@@ -79,27 +79,42 @@ const injecaoQrFallback = `enviarEtapaSincronizacao("wpp-create-resolved");
       } catch {}
 
       if (!base64Qr) {
-        let elementoQr = null;
-        const canvases = await pagina.$$("canvas");
+        const resultadoVisual = await pagina
+          .evaluate(() => {
+            try {
+              const canvases = Array.from(document.querySelectorAll("canvas"));
 
-        for (const canvas of canvases) {
-          const box = await canvas.boundingBox().catch(() => null);
+              for (const canvas of canvases) {
+                const rect = canvas.getBoundingClientRect();
 
-          if (
-            box &&
-            box.width >= 160 &&
-            box.height >= 160 &&
-            Math.abs(box.width - box.height) <= 30
-          ) {
-            elementoQr = canvas;
-            break;
-          }
-        }
+                if (
+                  rect.width < 160 ||
+                  rect.height < 160 ||
+                  Math.abs(rect.width - rect.height) > 30
+                ) {
+                  continue;
+                }
 
-        if (elementoQr) {
-          const imagem = await elementoQr.screenshot({ type: "png" });
-          base64Qr =
-            "data:image/png;base64," + Buffer.from(imagem).toString("base64");
+                const contenedor = canvas.closest("[data-ref]");
+                const imagem = canvas.toDataURL?.();
+
+                if (!imagem) {
+                  continue;
+                }
+
+                return {
+                  base64Image: imagem,
+                  urlCode: contenedor?.getAttribute("data-ref") || null,
+                };
+              }
+            } catch {}
+
+            return null;
+          })
+          .catch(() => null);
+
+        if (resultadoVisual?.base64Image) {
+          base64Qr = String(resultadoVisual.base64Image);
         }
       }
 
