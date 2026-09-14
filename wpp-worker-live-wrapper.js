@@ -22,9 +22,12 @@ let codigoWpp = MODULOS_WPP.map((arquivo) =>
   fs.readFileSync(path.join(diretorioModulos, arquivo), "utf8"),
 ).join("");
 
-const marcador = `async function responderSolicitacao(id, acao, dados) {\n  try {`;
+// Aceita tanto LF quanto CRLF. No build Windows os arquivos podem chegar com
+// \r\n, enquanto o wrapper anterior procurava apenas \n e abortava o worker.
+const marcador =
+  /async function responderSolicitacao\(id, acao, dados\) \{\r?\n[ \t]*try \{/;
 
-if (!codigoWpp.includes(marcador)) {
+if (!marcador.test(codigoWpp)) {
   throw new Error("Nao foi possivel instalar o logout vivo do WPPConnect.");
 }
 
