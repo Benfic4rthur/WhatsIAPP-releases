@@ -252,3 +252,5 @@
     .then(renderizarEstado)
     .catch(() => {});
 })();
+
+require("./renderer-modules/ajustes-conversa-sessao.js");

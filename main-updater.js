@@ -1,8 +1,49 @@
 "use strict";
 
 const { app } = require("electron");
+const path = require("path");
+const workerThreads = require("worker_threads");
 const pacote = require("./package.json");
 const { criarDesktopUpdater } = require("./desktop-updater");
+const { registrarSessaoWhatsAppIpc } = require("./sessao-whatsapp");
+
+// Roteia os dois workers por wrappers pequenos que adicionam logout remoto
+// usando as sessoes que ja estao autenticadas e ativas. Isso evita recriar
+// sessoes depois que o app fecha, quando credenciais locais podem mudar de
+// estado ou o Chromium pode restaurar uma sessao antiga.
+if (!global.__whatsiappWorkerRouteInstalled) {
+  const WorkerOriginal = workerThreads.Worker;
+
+  class WorkerRoteadoWhatsIAPP extends WorkerOriginal {
+    constructor(filename, options) {
+      const nome = path.basename(String(filename || ""));
+      const ehBaileys = nome === "whatsapp-worker.js";
+      const ehWpp = nome === "wpp-worker.js";
+      const arquivoReal = ehBaileys
+        ? path.join(__dirname, "whatsapp-worker-live-wrapper.js")
+        : ehWpp
+          ? path.join(__dirname, "wpp-worker-live-wrapper.js")
+          : filename;
+
+      super(arquivoReal, options);
+
+      if (ehBaileys || ehWpp) {
+        const chave = ehBaileys ? "baileys" : "wpp";
+        global.__whatsiappWorkers = global.__whatsiappWorkers || {};
+        global.__whatsiappWorkers[chave] = this;
+
+        this.once("exit", () => {
+          if (global.__whatsiappWorkers?.[chave] === this) {
+            global.__whatsiappWorkers[chave] = null;
+          }
+        });
+      }
+    }
+  }
+
+  workerThreads.Worker = WorkerRoteadoWhatsIAPP;
+  global.__whatsiappWorkerRouteInstalled = true;
+}
 
 // Runtime-only compatibility switch. The legacy updater inside index.js checks
 // this flag. It is intentionally mutated only in the main-process module cache,
@@ -15,6 +56,7 @@ app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 
 const updater = criarDesktopUpdater();
 updater.registrarIpc();
+registrarSessaoWhatsAppIpc();
 
 let aplicacaoIniciada = false;
 
