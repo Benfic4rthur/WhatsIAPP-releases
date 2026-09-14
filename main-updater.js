@@ -27,13 +27,16 @@ app.on("browser-window-created", (_evento, janela) => {
   }
 });
 
-// O bootstrap antigo liberava a interface assim que o Baileys ficava pronto,
-// mesmo quando o WPPConnect ainda estava aguardando o segundo QR. Mantemos o
-// evento de pronto do Baileys retido ate existir confirmacao real de login do
-// WPPConnect. Assim, ao escanear um QR, o outro continua obrigatorio antes de
-// o app entrar no estado conectado.
+// Login inicial em duas etapas:
+// 1. Baileys inicia sozinho e, se necessario, exibe o primeiro QR.
+// 2. Somente depois do Baileys conectar o WPPConnect e liberado para iniciar.
+// 3. O evento de Baileys conectado continua retido ate o WPPConnect autenticar.
+// Assim nunca existem dois QRs concorrendo e a interface so libera com as duas
+// sessoes realmente autenticadas.
 let wppAutenticadoInicial = false;
+let baileysAutenticadoInicial = false;
 let baileysConectadoPendente = null;
+let wppInicioLiberado = false;
 let emitirWorkerOriginal = null;
 
 function mensagemConfirmaWpp(mensagem) {
@@ -87,6 +90,36 @@ function ehBaileysConectado(mensagem) {
   );
 }
 
+function ehQrBaileys(mensagem) {
+  return (
+    mensagem?.tipo === "evento" &&
+    mensagem?.evento === "qr" &&
+    !!mensagem?.dados
+  );
+}
+
+function liberarInicioWpp() {
+  if (wppInicioLiberado || !baileysAutenticadoInicial) {
+    return false;
+  }
+
+  const workerWpp = global.__whatsiappWorkers?.wpp;
+
+  if (!workerWpp) {
+    return false;
+  }
+
+  wppInicioLiberado = true;
+  console.log("[LOGIN FLOW] WPP_START_AFTER_BAILEYS");
+
+  workerWpp.postMessage({
+    tipo: "controle-whatsiapp",
+    acao: "iniciar-wpp",
+  });
+
+  return true;
+}
+
 function liberarBaileysConectadoPendente() {
   const pendente = baileysConectadoPendente;
   baileysConectadoPendente = null;
@@ -108,9 +141,8 @@ function liberarBaileysConectadoPendente() {
 }
 
 // Roteia os dois workers por wrappers pequenos que adicionam logout remoto
-// usando as sessoes que ja estao autenticadas e ativas. Isso evita recriar
-// sessoes depois que o app fecha, quando credenciais locais podem mudar de
-// estado ou o Chromium pode restaurar uma sessao antiga.
+// usando as sessoes que ja estao autenticadas e ativas. O WPP wrapper tambem
+// fica parado ate o Baileys confirmar o primeiro login.
 if (!global.__whatsiappWorkerRouteInstalled) {
   const WorkerOriginal = workerThreads.Worker;
   emitirWorkerOriginal = WorkerOriginal.prototype.emit;
@@ -136,6 +168,8 @@ if (!global.__whatsiappWorkerRouteInstalled) {
 
       if (ehWpp) {
         wppAutenticadoInicial = false;
+        wppInicioLiberado = false;
+        console.log("[LOGIN FLOW] WPP_WAITING_BAILEYS");
       }
 
       if (ehBaileys || ehWpp) {
@@ -148,6 +182,10 @@ if (!global.__whatsiappWorkerRouteInstalled) {
             global.__whatsiappWorkers[chave] = null;
           }
         });
+      }
+
+      if (ehWpp && baileysAutenticadoInicial) {
+        setImmediate(liberarInicioWpp);
       }
     }
 
@@ -178,17 +216,24 @@ if (!global.__whatsiappWorkerRouteInstalled) {
         return resultado;
       }
 
-      if (
-        this.__whatsiappTipoWorker === "baileys" &&
-        ehBaileysConectado(mensagem) &&
-        !wppAutenticadoInicial
-      ) {
-        baileysConectadoPendente = {
-          worker: this,
-          mensagem,
-        };
-        console.log("[LOGIN GATE] BAILEYS_READY_WAITING_WPP_AUTH");
-        return true;
+      if (this.__whatsiappTipoWorker === "baileys") {
+        if (ehQrBaileys(mensagem)) {
+          baileysAutenticadoInicial = false;
+        }
+
+        if (ehBaileysConectado(mensagem)) {
+          baileysAutenticadoInicial = true;
+          liberarInicioWpp();
+
+          if (!wppAutenticadoInicial) {
+            baileysConectadoPendente = {
+              worker: this,
+              mensagem,
+            };
+            console.log("[LOGIN GATE] BAILEYS_READY_WAITING_WPP_AUTH");
+            return true;
+          }
+        }
       }
 
       return super.emit(evento, ...args);
