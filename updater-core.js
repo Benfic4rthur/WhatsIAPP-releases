@@ -152,7 +152,7 @@ function validarCaminhoDmg(caminho, diretorio, nomeEsperado) {
 }
 
 function validarCaminhoAplicacaoMac(caminho) {
-  return path.normalize(String(caminho || "")) === MAC_APP_TARGET;
+  return path.posix.normalize(String(caminho || "")) === MAC_APP_TARGET;
 }
 
 function normalizarEstadoPendente(dados, versaoAtual) {
