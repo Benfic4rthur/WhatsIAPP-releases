@@ -7,10 +7,10 @@ const pacote = require("./package.json");
 const { criarDesktopUpdater } = require("./desktop-updater");
 const { registrarSessaoWhatsAppIpc } = require("./sessao-whatsapp");
 
-// Roteia somente o worker Baileys por um wrapper pequeno que adiciona a acao
-// de logout remoto usando o socket que ja esta autenticado e ativo. Isso evita
-// recriar a sessao depois que o app fecha, quando as credenciais locais podem
-// ja ter sido marcadas como desconectadas.
+// Roteia os dois workers por wrappers pequenos que adicionam logout remoto
+// usando as sessoes que ja estao autenticadas e ativas. Isso evita recriar
+// sessoes depois que o app fecha, quando credenciais locais podem mudar de
+// estado ou o Chromium pode restaurar uma sessao antiga.
 if (!global.__whatsiappWorkerRouteInstalled) {
   const WorkerOriginal = workerThreads.Worker;
 
@@ -18,19 +18,23 @@ if (!global.__whatsiappWorkerRouteInstalled) {
     constructor(filename, options) {
       const nome = path.basename(String(filename || ""));
       const ehBaileys = nome === "whatsapp-worker.js";
+      const ehWpp = nome === "wpp-worker.js";
       const arquivoReal = ehBaileys
         ? path.join(__dirname, "whatsapp-worker-live-wrapper.js")
-        : filename;
+        : ehWpp
+          ? path.join(__dirname, "wpp-worker-live-wrapper.js")
+          : filename;
 
       super(arquivoReal, options);
 
-      if (ehBaileys) {
+      if (ehBaileys || ehWpp) {
+        const chave = ehBaileys ? "baileys" : "wpp";
         global.__whatsiappWorkers = global.__whatsiappWorkers || {};
-        global.__whatsiappWorkers.baileys = this;
+        global.__whatsiappWorkers[chave] = this;
 
         this.once("exit", () => {
-          if (global.__whatsiappWorkers?.baileys === this) {
-            global.__whatsiappWorkers.baileys = null;
+          if (global.__whatsiappWorkers?.[chave] === this) {
+            global.__whatsiappWorkers[chave] = null;
           }
         });
       }
