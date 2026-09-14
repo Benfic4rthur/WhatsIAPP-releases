@@ -4,6 +4,12 @@ const path = require("path");
 
 const MAC_APP_TARGET = "/Applications/WhatsIAPP.app";
 
+function plataformaUpdater(plataforma = process.platform, arquitetura = process.arch) {
+  if (plataforma === "win32" && arquitetura === "x64") return "windows-x64";
+  if (plataforma === "darwin" && arquitetura === "arm64") return "macos-arm64";
+  return null;
+}
+
 function parseSemver(valor) {
   const texto = String(valor || "").trim().replace(/^v/i, "");
   const match = texto.match(/^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$/);
@@ -254,6 +260,7 @@ exit 0
 
 module.exports = {
   MAC_APP_TARGET,
+  plataformaUpdater,
   parseSemver,
   compararVersoes,
   ehPrerelease,
