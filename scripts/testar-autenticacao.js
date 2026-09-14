@@ -131,13 +131,15 @@ async function testarWpp() {
     clearInterval: noop, setInterval: noop,
   });
   vm.runInContext(ler('wpp-worker-modules/05-inicializacao-wpp.js'), c);
+  const perfilTeste = path.resolve('/perfil-de-teste/wppconnect-profile');
+  const perfilComEspacos = path.resolve('/perfil de teste/wppconnect-profile');
   assert.equal(
     c.processoWppEhChromeDoPerfil(
       {
         nome: 'chrome.exe',
-        comando: 'chrome.exe --user-data-dir=/perfil-de-teste/wppconnect-profile',
+        comando: `chrome.exe --user-data-dir="${perfilTeste}"`,
       },
-      '/perfil-de-teste/wppconnect-profile',
+      perfilTeste,
     ),
     true,
     'Reconhece somente o Chromium que usa exatamente o perfil do WPPConnect',
@@ -146,18 +148,17 @@ async function testarWpp() {
     c.processoWppEhChromeDoPerfil(
       {
         nome: '/Aplicativos/Google',
-        comando:
-          'Chrome for Testing --user-data-dir="/perfil de teste/wppconnect-profile"',
+        comando: `Chrome for Testing --user-data-dir="${perfilComEspacos}"`,
       },
-      '/perfil de teste/wppconnect-profile',
+      perfilComEspacos,
     ),
     true,
     'Reconhece o comando do Chrome no macOS mesmo com espaços no caminho',
   );
   assert.equal(
     c.processoWppEhChromeDoPerfil(
-      { nome: 'chrome.exe', comando: 'chrome.exe --user-data-dir=/outro-perfil' },
-      '/perfil-de-teste/wppconnect-profile',
+      { nome: 'chrome.exe', comando: `chrome.exe --user-data-dir="${path.resolve('/outro-perfil')}"` },
+      perfilTeste,
     ),
     false,
     'Nao encerra outro Chrome do usuario',
