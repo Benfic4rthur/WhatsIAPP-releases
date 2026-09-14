@@ -34,6 +34,7 @@ app.on("browser-window-created", (_evento, janela) => {
 // o app entrar no estado conectado.
 let wppAutenticadoInicial = false;
 let baileysConectadoPendente = null;
+let emitirWorkerOriginal = null;
 
 function mensagemConfirmaWpp(mensagem) {
   if (!mensagem || mensagem.tipo !== "evento") return false;
@@ -90,10 +91,16 @@ function liberarBaileysConectadoPendente() {
   const pendente = baileysConectadoPendente;
   baileysConectadoPendente = null;
 
-  if (!pendente?.worker || !pendente?.mensagem) return;
+  if (
+    !pendente?.worker ||
+    !pendente?.mensagem ||
+    typeof emitirWorkerOriginal !== "function"
+  ) {
+    return;
+  }
 
   console.log("[LOGIN GATE] BAILEYS_READY_RELEASED");
-  workerThreads.Worker.prototype.emit.call(
+  emitirWorkerOriginal.call(
     pendente.worker,
     "message",
     pendente.mensagem,
@@ -106,6 +113,7 @@ function liberarBaileysConectadoPendente() {
 // estado ou o Chromium pode restaurar uma sessao antiga.
 if (!global.__whatsiappWorkerRouteInstalled) {
   const WorkerOriginal = workerThreads.Worker;
+  emitirWorkerOriginal = WorkerOriginal.prototype.emit;
 
   class WorkerRoteadoWhatsIAPP extends WorkerOriginal {
     constructor(filename, options) {
