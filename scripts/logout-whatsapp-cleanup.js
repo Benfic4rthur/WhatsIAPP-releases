@@ -114,10 +114,15 @@ function relancarAplicacao() {
       detached: true,
       stdio: "ignore",
       env,
-      windowsHide: true,
+      // No Windows, windowsHide=true pode iniciar o Electron em estado oculto.
+      // O helper continua sem console proprio, mas o app relancado precisa poder
+      // criar e exibir a BrowserWindow normalmente.
+      windowsHide: process.platform !== "win32",
     });
     filho.unref();
-    log(`[SESSION LOGOUT] APP_RELAUNCH_OK | pid=${filho.pid || 0}`);
+    log(
+      `[SESSION LOGOUT] APP_RELAUNCH_OK | pid=${filho.pid || 0} | visible=${process.platform === "win32"}`,
+    );
   } catch (erro) {
     log(`[SESSION LOGOUT] APP_RELAUNCH_FAILED | error=${erro?.message || erro}`);
   }
