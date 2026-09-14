@@ -22,20 +22,91 @@ let codigoWpp = MODULOS_WPP.map((arquivo) =>
   fs.readFileSync(path.join(diretorioModulos, arquivo), "utf8"),
 ).join("");
 
-// Em sessao desvinculada, waitForLogin=false pode devolver o cliente antes de
-// o fluxo de autenticacao registrar/emitir o QR pelo catchQR. Isso deixa o app
-// com apenas o QR do Baileys e o WPPConnect parado em stream mode QR.
-// Forcamos a espera de login no worker empacotado para garantir que o segundo
-// QR seja entregue antes de o WPPConnect seguir para a sincronizacao normal.
-const marcadorWaitForLogin = /waitForLogin\s*:\s*false\s*,/;
+// O WPPConnect 2.2.6 pode entrar no estado QR sem disparar catchQR.
+// Mantemos waitForLogin=false para o client ficar disponivel e instalamos
+// um fallback visual que captura o QR diretamente da pagina do WhatsApp Web.
+const marcadorCreateResolvido =
+  /enviarEtapaSincronizacao\("wpp-create-resolved"\);/;
 
-if (!marcadorWaitForLogin.test(codigoWpp)) {
-  throw new Error("Nao foi possivel instalar o ajuste de QR do WPPConnect.");
+if (!marcadorCreateResolvido.test(codigoWpp)) {
+  throw new Error("Nao foi possivel instalar o fallback de QR do WPPConnect.");
 }
 
+const injecaoQrFallback = `enviarEtapaSincronizacao("wpp-create-resolved");
+
+  let ultimoQrVisualWpp = null;
+  let tentativasQrVisualWpp = 0;
+
+  const timerQrVisualWpp = setInterval(async () => {
+    if (encerrando || !client?.page) {
+      clearInterval(timerQrVisualWpp);
+      return;
+    }
+
+    if (qrAceito) {
+      clearInterval(timerQrVisualWpp);
+      return;
+    }
+
+    try {
+      const pagina = client.page;
+      let elementoQr = await pagina.$("div[data-ref]");
+
+      if (!elementoQr) {
+        const canvases = await pagina.$$("canvas");
+
+        for (const canvas of canvases) {
+          const box = await canvas.boundingBox().catch(() => null);
+
+          if (
+            box &&
+            box.width >= 160 &&
+            box.height >= 160 &&
+            Math.abs(box.width - box.height) <= 30
+          ) {
+            elementoQr = canvas;
+            break;
+          }
+        }
+      }
+
+      if (!elementoQr) {
+        tentativasQrVisualWpp += 1;
+        if (tentativasQrVisualWpp % 10 === 0) {
+          console.log("[QR FALLBACK] WPPCONNECT_QR_NOT_FOUND");
+        }
+        return;
+      }
+
+      const imagem = await elementoQr.screenshot({ type: "png" });
+      const base64Qr =
+        "data:image/png;base64," + Buffer.from(imagem).toString("base64");
+
+      if (base64Qr === ultimoQrVisualWpp) {
+        return;
+      }
+
+      ultimoQrVisualWpp = base64Qr;
+      qrAceito = false;
+      qrAguardandoLeitura = true;
+
+      console.log("[QR FALLBACK] WPPCONNECT_QR_CAPTURED");
+      enviarEtapaSincronizacao("qr", "fallback-visual");
+      enviar("wpp-qr", base64Qr);
+    } catch (erro) {
+      tentativasQrVisualWpp += 1;
+      if (tentativasQrVisualWpp % 10 === 0) {
+        console.log(
+          "[QR FALLBACK] WPPCONNECT_QR_CAPTURE_ERROR | " +
+            String(erro?.message || erro || "unknown"),
+        );
+      }
+    }
+  }, 900);`;
+
 codigoWpp = codigoWpp.replace(
-  marcadorWaitForLogin,
-  'waitForLogin: true,',
+  marcadorCreateResolvido,
+  injecaoQrFallback,
 );
 
 // Aceita tanto LF quanto CRLF. No build Windows os arquivos podem chegar com
