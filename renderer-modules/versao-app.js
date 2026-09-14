@@ -21,6 +21,12 @@
     <div class="desktop-updater-banner-conteudo">
       <strong class="desktop-updater-banner-titulo"></strong>
       <span class="desktop-updater-banner-texto"></span>
+      <div class="desktop-updater-progresso" hidden>
+        <div class="desktop-updater-progresso-trilho">
+          <div class="desktop-updater-progresso-barra"></div>
+        </div>
+        <span class="desktop-updater-progresso-percentual">0%</span>
+      </div>
     </div>
     <div class="desktop-updater-banner-acoes"></div>
   `;
@@ -44,6 +50,9 @@
   const tituloBanner = banner.querySelector(".desktop-updater-banner-titulo");
   const textoBanner = banner.querySelector(".desktop-updater-banner-texto");
   const acoesBanner = banner.querySelector(".desktop-updater-banner-acoes");
+  const progressoBanner = banner.querySelector(".desktop-updater-progresso");
+  const barraProgresso = banner.querySelector(".desktop-updater-progresso-barra");
+  const percentualProgresso = banner.querySelector(".desktop-updater-progresso-percentual");
   const textoModal = overlay.querySelector(".desktop-updater-modal-texto");
   const erroModal = overlay.querySelector(".desktop-updater-modal-erro");
   const acoesModal = overlay.querySelector(".desktop-updater-modal-acoes");
@@ -62,9 +71,23 @@
     while (elemento.firstChild) elemento.firstChild.remove();
   }
 
+  function ocultarProgresso() {
+    progressoBanner.hidden = true;
+    barraProgresso.style.width = "0%";
+    percentualProgresso.textContent = "0%";
+  }
+
+  function mostrarProgresso(valor) {
+    const percentual = Math.max(0, Math.min(100, Number(valor) || 0));
+    progressoBanner.hidden = false;
+    barraProgresso.style.width = `${percentual}%`;
+    percentualProgresso.textContent = `${Math.round(percentual)}%`;
+  }
+
   function ocultarBanner() {
     banner.hidden = true;
     limpar(acoesBanner);
+    ocultarProgresso();
   }
 
   function mostrarErroModal(mensagem) {
@@ -162,10 +185,23 @@
   function renderizarEstado(estado) {
     const etapa = String(estado?.etapa || "sem-update");
 
-    if (etapa === "adiado" || etapa === "sem-update" || etapa === "verificando" || etapa === "encontrado" || etapa === "baixando") {
+    if (etapa === "adiado" || etapa === "sem-update" || etapa === "verificando") {
       ocultarBanner();
       return;
     }
+
+    if (etapa === "encontrado" || etapa === "baixando") {
+      limpar(acoesBanner);
+      tituloBanner.textContent = "Baixando atualização";
+      textoBanner.textContent = estado?.versao
+        ? `Versão ${estado.versao}`
+        : "Nova versão disponível";
+      mostrarProgresso(estado?.percentual);
+      banner.hidden = false;
+      return;
+    }
+
+    ocultarProgresso();
 
     if (etapa === "instalando") {
       tituloBanner.textContent = "Instalando atualização";
