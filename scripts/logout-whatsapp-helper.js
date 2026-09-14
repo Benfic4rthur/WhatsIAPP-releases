@@ -109,7 +109,7 @@ async function logoutBaileys() {
       return { ok: true, jaDesconectada: true };
     }
 
-    const estadoInicial = await new Promise((resolve, reject) => {
+    const estadoInicial = new Promise((resolve, reject) => {
       let finalizado = false;
       const concluir = (valor) => {
         if (finalizado) return;
