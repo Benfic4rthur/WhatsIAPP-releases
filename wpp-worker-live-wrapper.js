@@ -2,6 +2,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const { parentPort } = require("worker_threads");
 
 const MODULOS_WPP = [
   "01-nucleo-sincronizacao.js",
@@ -173,4 +174,39 @@ const executarWpp = new Function(
   codigoWpp,
 );
 
-executarWpp(module.exports, require, module, __filename, __dirname);
+let wppIniciado = false;
+const mensagensAntesDoInicio = [];
+
+function iniciarWppAgora() {
+  if (wppIniciado) return;
+  wppIniciado = true;
+
+  parentPort.off("message", aguardarInicioWpp);
+  console.log("[LOGIN FLOW] WPP_WORKER_STARTING");
+
+  executarWpp(module.exports, require, module, __filename, __dirname);
+
+  if (mensagensAntesDoInicio.length) {
+    const pendentes = mensagensAntesDoInicio.splice(0);
+    setImmediate(() => {
+      for (const mensagem of pendentes) {
+        parentPort.emit("message", mensagem);
+      }
+    });
+  }
+}
+
+function aguardarInicioWpp(mensagem) {
+  if (
+    mensagem?.tipo === "controle-whatsiapp" &&
+    mensagem?.acao === "iniciar-wpp"
+  ) {
+    iniciarWppAgora();
+    return;
+  }
+
+  mensagensAntesDoInicio.push(mensagem);
+}
+
+parentPort.on("message", aguardarInicioWpp);
+console.log("[LOGIN FLOW] WPP_WORKER_WAITING_BAILEYS");
