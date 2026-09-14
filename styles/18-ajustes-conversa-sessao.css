@@ -36,6 +36,52 @@
     text-align: center;
 }
 
+/*
+   O painel principal ganhou mais conteudo. Em vez de deixar o proprio painel
+   rolar, mantemos o cabecalho fixo e fazemos somente o corpo rolar. Isso evita
+   o corte do card de logout em telas menores e deixa a barra sempre funcional.
+*/
+#painelConfiguracoesApp {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    height: auto;
+    max-height: calc(100vh - 82px) !important;
+}
+
+#painelConfiguracoesApp .config-app-topo {
+    flex: 0 0 auto;
+}
+
+#painelConfiguracoesApp .config-app-corpo {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+}
+
+#painelConfiguracoesApp .config-app-corpo::-webkit-scrollbar {
+    width: 8px;
+}
+
+#painelConfiguracoesApp .config-app-corpo::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#painelConfiguracoesApp .config-app-corpo::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: rgba(134, 150, 160, .46);
+    background-clip: padding-box;
+}
+
+#painelConfiguracoesApp .config-app-corpo::-webkit-scrollbar-thumb:hover {
+    background: rgba(174, 186, 193, .68);
+    background-clip: padding-box;
+}
+
 .config-sessao-whatsapp {
     margin-top: 8px;
     padding: 13px;
