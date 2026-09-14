@@ -447,9 +447,13 @@ async function concluirProntidaoInicial() {
     const estado = await atualizarEstadoArquivamento(true, true);
     if (encerrando || !qrAceito || revisao !== revisaoAutenticacaoWpp) return false;
 
-    // Uma conta sem conversas tambem pode estar completamente sincronizada.
-    const temEstado = Array.isArray(estado);
-    const aliasesProntos = temEstado && (estado.length === 0 || aliasesParaChat.size > 0);
+    const temEstado =
+      Array.isArray(estado) && quantidadeCatalogoWppPronta(estado.length);
+    const aliasesProntos =
+      temEstado &&
+      (estado.length === 0
+        ? resumoConversasBaileysRecebido && quantidadeConversasBaileys === 0
+        : aliasesParaChat.size > 0);
 
     const pronto = estadoPrivacidadeCompleto && temEstado && aliasesProntos;
 

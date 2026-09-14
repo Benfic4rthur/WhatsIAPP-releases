@@ -1,6 +1,6 @@
 {
   "name": "whatsiapp",
-  "version": "1.0.21",
+  "version": "1.0.22",
   "main": "main-updater.js",
   "scripts": {
     "test": "node --check main-updater.js && node --check sessao-whatsapp.js && node --check desktop-updater.js && node --check updater-core.js && node --check index.js && node --check whatsapp-worker.js && node --check whatsapp-worker-live-wrapper.js && node --check wpp-worker.js && node --check wpp-worker-live-wrapper.js && node --check renderer-modules/versao-app.js && node --check renderer-modules/ajustes-conversa-sessao.js && node --check renderer-modules/anexos.js && node --check renderer-modules/audio.js && node --check renderer-modules/eventos-whatsapp.js && node --check renderer-modules/lista-conversas.js && node --check renderer-modules/renderizacao-mensagens.js && node --check renderer-modules/compositor-mensagens.js && node --check scripts/logout-whatsapp-cleanup.js && node scripts/testar-autenticacao.js && node scripts/testar-updater.js && node scripts/testar-status-entrega.js && node scripts/testar-midias.js && node scripts/testar-cartoes.js",

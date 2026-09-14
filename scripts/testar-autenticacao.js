@@ -106,6 +106,82 @@ function testarSequencia() {
   assert(!ler('main-updater.js').includes('emit(evento'), 'Sem retencao de eventos no wrapper');
 }
 
+function testarCatalogoWpp() {
+  const fonte = ler('wpp-worker-modules/01-nucleo-sincronizacao.js');
+  const c = vm.createContext({
+    Date,
+    modoStream: 'MAIN',
+    infoStream: 'NORMAL',
+    quantidadeConversasBaileys: 0,
+    resumoConversasBaileysRecebido: false,
+    primeiraLeituraVaziaFinalEm: 0,
+  });
+  for (const nome of [
+    'receberResumoConversasBaileys',
+    'streamWppEstaFinal',
+    'quantidadeCatalogoWppPronta',
+  ]) {
+    vm.runInContext(funcao(fonte, nome), c);
+  }
+  assert.equal(c.receberResumoConversasBaileys({ quantidade: 845 }), true);
+  assert.equal(c.quantidadeCatalogoWppPronta(0), false, 'Vazio transitorio nao conclui');
+  assert.equal(c.quantidadeCatalogoWppPronta(3), false, 'Catalogo parcial nao conclui');
+  assert.equal(c.quantidadeCatalogoWppPronta(825), false, 'Somente arquivadas ainda e parcial');
+  assert.equal(c.quantidadeCatalogoWppPronta(843), true, 'Catalogo final compativel conclui');
+  assert(!fonte.includes('client.getAllChats'), 'Sem API deprecated getAllChats');
+  assert(!fonte.includes('WAPI.getAllChats'), 'Sem fallback deprecated direto');
+  assert(!fonte.includes('mainReady ||'), 'Sem latch de QR usado como prontidao');
+}
+
+function testarDefesaSnapshotParcialMain() {
+  const fonte = ler('index.js');
+  let publicacoes = 0;
+  const conversasBase = Array.from({ length: 100 }, (_, indice) => ({
+    id: `5511${String(indice).padStart(8, '0')}@s.whatsapp.net`,
+  }));
+  const c = vm.createContext({
+    console: silencio,
+    conversasBase,
+    estadoArquivamento: new Map([['u:551100000001', false]]),
+    estadoTrancamento: new Map([['u:551100000001', false]]),
+    estadoAliasesPrivacidade: new Map(),
+    estadoPrivacidadeConhecido: new Set(['u:551100000001']),
+    estadoNaoLidasWpp: new Map(),
+    estadoPrivacidadeCompleto: false,
+    estadoPrivacidadePronto: false,
+    sequenciaEstadoNaoLidasWpp: 0,
+    geracaoEstadoNaoLidasWpp: 'teste',
+    salvarCachePrivacidade: noop,
+    enviarConversasMescladas: () => { publicacoes++; },
+    liberarMensagensPendentesPrivacidade: noop,
+    tentarLiberarFullReadyInicial: noop,
+  });
+  for (const nome of ['serializarId', 'chaveCanonica', 'atualizarEstadoArquivamento']) {
+    vm.runInContext(funcao(fonte, nome), c);
+  }
+  assert.equal(c.atualizarEstadoArquivamento({ itens: [], completo: true }), false);
+  assert.equal(c.estadoPrivacidadeConhecido.size, 1, 'Vazio nao apaga cache anterior');
+  assert.equal(publicacoes, 0, 'Vazio nao publica lista destrutiva');
+  const parcial = c.conversasBase.slice(0, 3).map((conversa) => ({
+    id: conversa.id.replace('@s.whatsapp.net', '@c.us'),
+    aliases: [conversa.id],
+    arquivada: true,
+    trancada: false,
+  }));
+  assert.equal(c.atualizarEstadoArquivamento({ itens: parcial, completo: true }), false);
+  assert.equal(c.estadoPrivacidadeConhecido.size, 1, 'Parcial nao reduz cache anterior');
+  assert.equal(publicacoes, 0, 'Parcial nao publica lista destrutiva');
+  const completo = c.conversasBase.map((conversa) => ({
+    id: conversa.id.replace('@s.whatsapp.net', '@c.us'),
+    aliases: [conversa.id],
+    arquivada: false,
+    trancada: false,
+  }));
+  assert.equal(c.atualizarEstadoArquivamento({ itens: completo, completo: true }), true);
+  assert.equal(c.estadoPrivacidadeCompleto, true);
+  assert.equal(publicacoes, 1, 'Catalogo compativel publica uma vez');
+}
+
 async function testarWpp() {
   const eventos = [];
   let autenticada = false, resolverLogin, opcoes, loginChamado = 0;
@@ -123,6 +199,8 @@ async function testarWpp() {
     ultimoPercentualLoadingWpp: null, ultimaMensagemLoadingWpp: null,
     arquivamentosAguardandoCliente: new Map(), presencaConversaPendente: null,
     catalogoBaileys: [], timerProntidao: null, timerAtualizacao: null,
+    quantidadeConversasBaileys: 1, resumoConversasBaileysRecebido: true,
+    quantidadeCatalogoWppPronta: (total) => total >= 1,
     enviar: (evento, dados) => eventos.push({ evento, dados }),
     enviarEtapaSincronizacao: (etapa) => eventos.push({ evento: 'sync-stage', dados: { etapa } }),
     wppconnect: { create: async (args) => { opcoes = args; return client; } },
@@ -226,7 +304,11 @@ async function testarWpp() {
   c.atualizarEstadoArquivamento = async () => [];
   assert.equal(await c.concluirProntidaoInicial(), false);
   c.atualizarEstadoArquivamento = async () => { c.estadoPrivacidadeCompleto = true; return []; };
-  assert.equal(await c.concluirProntidaoInicial(), true, 'Snapshot vazio confirmado e valido');
+  assert.equal(await c.concluirProntidaoInicial(), false, 'Snapshot vazio nao libera a interface');
+  c.ultimoEstado = [{ id: '551100000001@c.us' }];
+  c.aliasesParaChat.set('u:551100000001', '551100000001@c.us');
+  c.atualizarEstadoArquivamento = async () => c.ultimoEstado;
+  assert.equal(await c.concluirProntidaoInicial(), true, 'Catalogo atual libera a interface');
   assert(eventos.some(e => e.evento === 'sync-stage' && e.dados.etapa === 'full-ready'));
 }
 
@@ -299,6 +381,8 @@ function testarRendererEWrappers() {
 
 (async () => {
   testarSequencia(); console.log('Autenticacao: sequencia, 4 combinacoes de sessoes, cache e reinicio PASS');
+  testarCatalogoWpp(); console.log('Autenticacao: catalogo WPP transitorio, final e APIs atuais PASS');
+  testarDefesaSnapshotParcialMain(); console.log('Autenticacao: snapshot parcial nao apaga conversas PASS');
   await testarWpp(); console.log('Autenticacao: API WPP, QR renovado, navegacao, revogacao e snapshot PASS');
   await testarBaileys(); console.log('Autenticacao: open/QR/515/401 e socket obsoleto PASS');
   testarRendererEWrappers(); console.log('Autenticacao: interface e wrappers LF/CRLF com logout remoto PASS');

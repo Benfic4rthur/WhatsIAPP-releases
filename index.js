@@ -974,10 +974,25 @@ function enviarConversasMescladas() {
 }
 
 function enviarCatalogoAoWpp() {
-  // Intencionalmente desativado.
-  // O catalogo do Baileys inclui conversas historicas/apagadas e nao deve
-  // criar ou validar chats na lista atual do WhatsIAPP.
-  return;
+  if (!archiveWorker || !Array.isArray(conversasBase)) {
+    return;
+  }
+
+  // Envia somente a quantidade como referência de completude. Os IDs do
+  // Baileys não entram no catálogo WPP nem validam chats históricos/apagados.
+  try {
+    archiveWorker.postMessage({
+      tipo: "resumo-conversas-baileys",
+      dados: {
+        quantidade: conversasBase.length,
+      },
+    });
+  } catch (erro) {
+    console.warn(
+      "WPPConnect: não foi possível atualizar o resumo do Baileys:",
+      erro?.message || erro,
+    );
+  }
 }
 
 function prepararMensagemComPrivacidade(dadosOriginais) {
@@ -1326,6 +1341,38 @@ function atualizarEstadoArquivamento(payload) {
   const completo = Array.isArray(payload) ? true : !!payload?.completo;
   const chavesNaoLidasVistas = new Set();
 
+  if (completo && conversasBase.length > 0) {
+    const chavesWpp = new Set();
+
+    for (const item of lista) {
+      for (const id of [
+        item?.id,
+        ...(Array.isArray(item?.aliases) ? item.aliases : []),
+      ]) {
+        const chave = chaveCanonica(id);
+        if (chave) chavesWpp.add(chave);
+      }
+    }
+
+    const chavesBaileys = new Set(
+      conversasBase.map((conversa) => chaveCanonica(conversa?.id)).filter(Boolean),
+    );
+    const totalCoberto = Array.from(chavesBaileys).filter((chave) =>
+      chavesWpp.has(chave),
+    ).length;
+    const tolerancia = Math.max(2, Math.ceil(chavesBaileys.size * 0.02));
+    const minimoCoberto = Math.max(1, chavesBaileys.size - tolerancia);
+
+    if (totalCoberto < minimoCoberto) {
+      console.warn(
+        `WPPConnect: snapshot parcial ignorado ` +
+          `(cobertas=${totalCoberto}/${chavesBaileys.size}, ` +
+          `itens=${lista.length}).`,
+      );
+      return false;
+    }
+  }
+
   if (completo) {
     estadoArquivamento.clear();
     estadoTrancamento.clear();
@@ -1412,6 +1459,8 @@ function atualizarEstadoArquivamento(payload) {
   enviarConversasMescladas();
   liberarMensagensPendentesPrivacidade();
   tentarLiberarFullReadyInicial();
+
+  return true;
 }
 
 function tentarLiberarFullReadyInicial() {
@@ -1968,6 +2017,7 @@ function criarWorkerArquivadas() {
   archiveWorker = new Worker(path.join(__dirname, "wpp-worker.js"), {
     workerData: {
       userDataPath: app.getPath("userData"),
+      quantidadeConversasBaileys: conversasBase.length,
     },
   });
 

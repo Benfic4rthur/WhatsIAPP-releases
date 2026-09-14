@@ -35,6 +35,18 @@ let sincronizandoCatalogo = false;
 let catalogoPendente = false;
 let timerCatalogo = null;
 
+let quantidadeConversasBaileys = Math.max(
+  0,
+  Number(workerData?.quantidadeConversasBaileys || 0) || 0,
+);
+let resumoConversasBaileysRecebido = Number.isFinite(
+  Number(workerData?.quantidadeConversasBaileys),
+);
+let primeiraLeituraVaziaFinalEm = 0;
+let ultimoAvisoCatalogoIncompletoEm = 0;
+let ultimaQuantidadeCatalogoAvisada = null;
+let ultimoAvisoProntidaoWppEm = 0;
+
 let assinaturaUltimoEstadoEmitido = "";
 let assinaturaCatalogoAtual = "";
 let assinaturaCatalogoSincronizado = "";
@@ -297,6 +309,91 @@ function assinaturaCatalogo(ids) {
   return (ids || []).map(normalizarId).filter(Boolean).sort().join("|");
 }
 
+function receberResumoConversasBaileys(dados = {}) {
+  const quantidade = Number(dados?.quantidade);
+
+  if (!Number.isFinite(quantidade) || quantidade < 0) {
+    return false;
+  }
+
+  quantidadeConversasBaileys = Math.floor(quantidade);
+  resumoConversasBaileysRecebido = true;
+  primeiraLeituraVaziaFinalEm = 0;
+
+  return true;
+}
+
+function streamWppEstaFinal() {
+  return (
+    String(modoStream || "").toUpperCase() === "MAIN" &&
+    String(infoStream || "").toUpperCase() === "NORMAL"
+  );
+}
+
+function quantidadeCatalogoWppPronta(quantidade) {
+  const total = Math.max(0, Number(quantidade || 0) || 0);
+
+  if (!resumoConversasBaileysRecebido) {
+    return total > 0;
+  }
+
+  if (quantidadeConversasBaileys === 0) {
+    if (total > 0) {
+      primeiraLeituraVaziaFinalEm = 0;
+      return true;
+    }
+
+    if (!streamWppEstaFinal()) {
+      primeiraLeituraVaziaFinalEm = 0;
+      return false;
+    }
+
+    if (!primeiraLeituraVaziaFinalEm) {
+      primeiraLeituraVaziaFinalEm = Date.now();
+      return false;
+    }
+
+    // Contas realmente vazias também concluem, mas somente depois de o
+    // Baileys confirmar zero e o WPP permanecer vazio em MAIN/NORMAL.
+    return Date.now() - primeiraLeituraVaziaFinalEm >= 5000;
+  }
+
+  primeiraLeituraVaziaFinalEm = 0;
+
+  // As duas sessões pertencem à mesma conta. Aceitamos uma pequena diferença
+  // para metadados que um motor filtra e o outro mantém, mas não um catálogo
+  // transitório de 0/3 chats enquanto centenas ainda estão sincronizando.
+  const tolerancia = Math.max(
+    2,
+    Math.ceil(quantidadeConversasBaileys * 0.02),
+  );
+  const minimoEsperado = Math.max(
+    1,
+    quantidadeConversasBaileys - tolerancia,
+  );
+
+  return total >= minimoEsperado;
+}
+
+function avisarCatalogoWppIncompleto(quantidade) {
+  const agora = Date.now();
+
+  if (
+    ultimaQuantidadeCatalogoAvisada === quantidade &&
+    agora - ultimoAvisoCatalogoIncompletoEm < 10000
+  ) {
+    return;
+  }
+
+  ultimaQuantidadeCatalogoAvisada = quantidade;
+  ultimoAvisoCatalogoIncompletoEm = agora;
+
+  console.log(
+    `WPPConnect: catálogo ainda sincronizando ` +
+      `(wpp=${quantidade}, baileys=${quantidadeConversasBaileys}).`,
+  );
+}
+
 function emitirEstadoSeMudou(forcar = false) {
   const assinatura =
     `${estadoPrivacidadeCompleto ? "1" : "0"}:` +
@@ -508,47 +605,6 @@ async function tentarListChats(options) {
   }
 }
 
-async function tentarGetAllChats() {
-  if (!client || typeof client.getAllChats !== "function") {
-    return [];
-  }
-
-  try {
-    const chats = await client.getAllChats(false);
-
-    return Array.isArray(chats) ? chats : [];
-  } catch (erro) {
-    console.log(`WPPConnect getAllChats falhou: ${erro?.message || erro}`);
-
-    return [];
-  }
-}
-
-async function tentarWapiDireto() {
-  if (!client?.page) {
-    return [];
-  }
-
-  try {
-    const chats = await client.page.evaluate(() => {
-      if (
-        typeof WAPI !== "undefined" &&
-        typeof WAPI.getAllChats === "function"
-      ) {
-        return WAPI.getAllChats();
-      }
-
-      return [];
-    });
-
-    return Array.isArray(chats) ? chats : [];
-  } catch (erro) {
-    console.log(`WPPConnect WAPI direto falhou: ${erro?.message || erro}`);
-
-    return [];
-  }
-}
-
 async function listarChatsRobusto() {
   const mapa = new Map();
 
@@ -565,22 +621,6 @@ async function listarChatsRobusto() {
   });
 
   mesclarChats(mapa, listaArquivadas, true);
-
-  // 3. Na 2.2.6, durante sincronização,
-  // listChats pode retornar vazio. Tenta a API legada.
-  if (mapa.size === 0) {
-    const legado = await tentarGetAllChats();
-
-    mesclarChats(mapa, legado, false);
-  }
-
-  // 4. Último fallback, consulta WAPI diretamente
-  // dentro da página do WhatsApp Web.
-  if (mapa.size === 0) {
-    const direto = await tentarWapiDireto();
-
-    mesclarChats(mapa, direto, false);
-  }
 
   return Array.from(mapa.values());
 }
@@ -724,16 +764,32 @@ async function verificarProntidao() {
 
   try {
     if (client?.page) {
-      isFullReady = !!(await client.page.evaluate(() => {
-        return !!(window.WPP && window.WPP.isFullReady);
+      const estadoPagina = await client.page.evaluate(() => ({
+        fullReady: !!window.WPP?.isFullReady,
+        stream:
+          typeof window.WPP?.conn?.getStreamData === "function"
+            ? window.WPP.conn.getStreamData()
+            : null,
       }));
+
+      isFullReady = !!estadoPagina?.fullReady;
+
+      if (estadoPagina?.stream?.mode) {
+        modoStream = String(estadoPagina.stream.mode);
+      }
+
+      if (estadoPagina?.stream?.info) {
+        infoStream = String(estadoPagina.stream.info);
+      }
     }
   } catch {}
 
   // API publica de autenticacao, inclusive para sessao restaurada e revogada.
   if (!(await confirmarAutenticacaoWpp("poll:autenticado"))) return false;
 
-  if (isFullReady && !fullReady) {
+  const interfacePronta = streamWppEstaFinal();
+
+  if (isFullReady && interfacePronta && !fullReady) {
     fullReady = true;
     whatsappPronto = true;
 
@@ -746,11 +802,9 @@ async function verificarProntidao() {
     agendarRevalidacaoPresenca(500, "FULL_READY");
   }
 
-  if (fullReady) {
+  if (fullReady && interfacePronta) {
     return true;
   }
-
-  const textoEstado = String(estado || estadoConexao || "").toUpperCase();
 
   const textoModo = String(modoStream || "").toUpperCase();
 
@@ -759,16 +813,13 @@ async function verificarProntidao() {
   // MAIN significa que a interface carregou, mas NÃO que o histórico completo
   // terminou. Para contas grandes, só consideramos realmente pronto quando
   // WPP.isFullReady ficar true.
-  const interfacePronta =
-    mainReady ||
-    textoEstado === "CONNECTED" ||
-    textoEstado === "NORMAL" ||
-    textoModo === "MAIN" ||
-    textoInfo === "NORMAL";
-
-  if (interfacePronta) {
+  if (
+    (textoModo === "MAIN" || textoInfo === "NORMAL") &&
+    Date.now() - ultimoAvisoProntidaoWppEm >= 10000
+  ) {
+    ultimoAvisoProntidaoWppEm = Date.now();
     console.log(
-      "WPPConnect: interface pronta, aguardando FULL_READY do histórico...",
+      "WPPConnect: aguardando MAIN/NORMAL e catálogo completo...",
     );
   }
 
@@ -835,13 +886,18 @@ async function atualizarEstadoArquivamento(emitir = true, forcar = false) {
     const chats = await listarChatsRobusto();
 
     if (chats.length === 0) {
-      // Os fallbacks convertem erros em []; confirme vazio na API publica.
-      // Somente uma leitura bem-sucedida apos FULL_READY e um snapshot vazio.
-      const confirmacao = pronto ? await client.listChats().catch(() => null) : null;
-      if (!Array.isArray(confirmacao) || confirmacao.length !== 0) {
-        console.log("WPPConnect ainda não disponibilizou chats.");
+      if (!quantidadeCatalogoWppPronta(0)) {
+        avisarCatalogoWppIncompleto(0);
         return ultimoEstado;
       }
+    }
+
+    if (
+      !prontidaoInicialFinalizada &&
+      !quantidadeCatalogoWppPronta(chats.length)
+    ) {
+      avisarCatalogoWppIncompleto(chats.length);
+      return ultimoEstado;
     }
     if (!qrAceito || revisao !== revisaoAutenticacaoWpp) return ultimoEstado;
 
@@ -886,7 +942,11 @@ async function atualizarEstadoArquivamento(emitir = true, forcar = false) {
     // um estado maior que já foi carregado.
     aplicarDesarquivamentosPendentes(novoEstado);
 
-    const podeSubstituir = pronto || novoEstado.length >= maiorQuantidadeChats;
+    const podeSubstituir =
+      maiorQuantidadeChats === 0 ||
+      novoEstado.length >= maiorQuantidadeChats ||
+      (prontidaoInicialFinalizada &&
+        novoEstado.length >= Math.floor(maiorQuantidadeChats * 0.98));
 
     if (!podeSubstituir) {
       console.log(

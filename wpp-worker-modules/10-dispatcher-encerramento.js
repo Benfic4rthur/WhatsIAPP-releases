@@ -664,6 +664,11 @@ parentPort.on("message", (mensagem) => {
     return;
   }
 
+  if (mensagem.tipo === "resumo-conversas-baileys") {
+    receberResumoConversasBaileys(mensagem.dados || {});
+    return;
+  }
+
   if (mensagem.tipo === "encerrar") {
     encerrar();
   }
