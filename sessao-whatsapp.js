@@ -13,6 +13,22 @@ function caminhoResultado() {
   return path.join(app.getPath("userData"), NOME_RESULTADO);
 }
 
+function caminhoLog() {
+  return path.join(app.getPath("userData"), "logs", "logout-whatsapp.log");
+}
+
+function logSessao(texto) {
+  try {
+    const arquivo = caminhoLog();
+    fs.mkdirSync(path.dirname(arquivo), { recursive: true });
+    fs.appendFileSync(
+      arquivo,
+      `${new Date().toISOString()} ${String(texto || "")}\n`,
+      "utf8",
+    );
+  } catch {}
+}
+
 function lerResultadoLogout({ remover = true } = {}) {
   const arquivo = caminhoResultado();
   if (!fs.existsSync(arquivo)) {
@@ -39,19 +55,20 @@ function lerResultadoLogout({ remover = true } = {}) {
   }
 }
 
-function solicitarLogoutBaileysVivo(timeoutMs = 30000) {
+function solicitarLogoutWorkerVivo(tipoWorker, timeoutMs = 35000) {
   return new Promise((resolve) => {
-    const worker = global.__whatsiappWorkers?.baileys;
+    const worker = global.__whatsiappWorkers?.[tipoWorker];
+    const nome = tipoWorker === "baileys" ? "Baileys" : "WPPConnect";
 
     if (!worker || typeof worker.postMessage !== "function") {
       resolve({
         ok: false,
-        erro: "Baileys ativo não foi encontrado. Feche e abra o WhatsIAPP e tente novamente.",
+        erro: `${nome} ativo nao foi encontrado. Feche e abra o WhatsIAPP e tente novamente.`,
       });
       return;
     }
 
-    const id = `logout-baileys-vivo-${Date.now()}-${Math.random()
+    const id = `logout-${tipoWorker}-vivo-${Date.now()}-${Math.random()
       .toString(16)
       .slice(2)}`;
     let finalizado = false;
@@ -71,14 +88,11 @@ function solicitarLogoutBaileysVivo(timeoutMs = 30000) {
     };
 
     const aoReceberMensagem = (mensagem) => {
-      if (
-        mensagem?.tipo === "resposta" &&
-        mensagem?.id === id
-      ) {
+      if (mensagem?.tipo === "resposta" && mensagem?.id === id) {
         concluir(
           mensagem?.resultado && typeof mensagem.resultado === "object"
             ? mensagem.resultado
-            : { ok: false, erro: "Resposta inválida do Baileys." },
+            : { ok: false, erro: `Resposta invalida do ${nome}.` },
         );
       }
     };
@@ -86,19 +100,19 @@ function solicitarLogoutBaileysVivo(timeoutMs = 30000) {
     const aoEncerrarWorker = () =>
       concluir({
         ok: false,
-        erro: "O worker Baileys encerrou antes de confirmar o logout remoto.",
+        erro: `O worker ${nome} encerrou antes de confirmar o logout remoto.`,
       });
 
     const aoErroWorker = (erro) =>
       concluir({
         ok: false,
-        erro: `Baileys: ${erro?.message || erro || "worker error"}`,
+        erro: `${nome}: ${erro?.message || erro || "worker error"}`,
       });
 
     const timer = setTimeout(() => {
       concluir({
         ok: false,
-        erro: "Tempo esgotado ao desconectar a sessão Baileys do WhatsApp.",
+        erro: `Tempo esgotado ao desconectar a sessao ${nome} do WhatsApp.`,
       });
     }, timeoutMs);
 
@@ -116,7 +130,7 @@ function solicitarLogoutBaileysVivo(timeoutMs = 30000) {
     } catch (erro) {
       concluir({
         ok: false,
-        erro: `Baileys: ${erro?.message || erro || "postMessage failed"}`,
+        erro: `${nome}: ${erro?.message || erro || "postMessage failed"}`,
       });
     }
   });
@@ -133,11 +147,11 @@ async function iniciarHelperLogout() {
   const helper = path.join(
     app.getAppPath(),
     "scripts",
-    "logout-whatsapp-helper-v2.js",
+    "logout-whatsapp-cleanup.js",
   );
 
   if (!fs.existsSync(helper)) {
-    console.warn(`[SESSION LOGOUT] HELPER_NOT_FOUND | path=${helper}`);
+    console.warn(`[SESSION LOGOUT] CLEANUP_HELPER_NOT_FOUND | path=${helper}`);
     return {
       ok: false,
       erro: "O componente de desconexão não foi encontrado.",
@@ -151,8 +165,45 @@ async function iniciarHelperLogout() {
       fs.rmSync(caminhoResultado(), { force: true });
     } catch {}
 
+    // Primeiro desconecta o WPPConnect usando o cliente que ja esta vivo.
+    // Esse era o lado que podia aparentar logout e depois retomar a sessao.
+    console.log("[SESSION LOGOUT] WPPCONNECT_LIVE_REQUEST");
+    logSessao("[SESSION LOGOUT] WPPCONNECT_LIVE_REQUEST");
+    const wppVivo = await solicitarLogoutWorkerVivo("wpp", 40000);
+
+    logSessao(
+      `[SESSION LOGOUT] WPPCONNECT_LIVE_RESULT | ok=${!!wppVivo?.ok} | ` +
+        `auth_after=${wppVivo?.autenticadaDepois ?? "unknown"} | ` +
+        `navigation=${!!wppVivo?.navegacaoEsperada} | ` +
+        `error=${wppVivo?.erro || ""}`,
+    );
+
+    if (!wppVivo?.ok) {
+      logoutEmAndamento = false;
+      console.warn(
+        `[SESSION LOGOUT] WPPCONNECT_LIVE_ABORT | error=${wppVivo?.erro || "unknown"}`,
+      );
+      return {
+        ok: false,
+        erro:
+          wppVivo?.erro ||
+          "Não foi possível desconectar a sessão secundária do WhatsApp.",
+      };
+    }
+
+    console.log("[SESSION LOGOUT] WPPCONNECT_LIVE_CONFIRMED");
+    logSessao("[SESSION LOGOUT] WPPCONNECT_LIVE_CONFIRMED");
+
+    // Depois desconecta o Baileys pelo socket vivo. Esse caminho ja provou que
+    // remove a outra entrada em Aparelhos conectados.
     console.log("[SESSION LOGOUT] BAILEYS_LIVE_REQUEST");
-    const baileysVivo = await solicitarLogoutBaileysVivo();
+    logSessao("[SESSION LOGOUT] BAILEYS_LIVE_REQUEST");
+    const baileysVivo = await solicitarLogoutWorkerVivo("baileys", 30000);
+
+    logSessao(
+      `[SESSION LOGOUT] BAILEYS_LIVE_RESULT | ok=${!!baileysVivo?.ok} | ` +
+        `error=${baileysVivo?.erro || ""}`,
+    );
 
     if (!baileysVivo?.ok) {
       logoutEmAndamento = false;
@@ -163,18 +214,18 @@ async function iniciarHelperLogout() {
         ok: false,
         erro:
           baileysVivo?.erro ||
-          "Não foi possível desconectar a sessão principal do WhatsApp.",
+          "A sessão WPPConnect foi desconectada, mas a sessão principal não confirmou o logout.",
       };
     }
 
     console.log("[SESSION LOGOUT] BAILEYS_LIVE_CONFIRMED");
+    logSessao("[SESSION LOGOUT] BAILEYS_LIVE_CONFIRMED");
 
     const env = {
       ...process.env,
       ELECTRON_RUN_AS_NODE: "1",
       WHATSIAPP_LOGOUT_USER_DATA: app.getPath("userData"),
       WHATSIAPP_LOGOUT_APP_PATH: app.getAppPath(),
-      WHATSIAPP_LOGOUT_RESOURCES_PATH: process.resourcesPath || "",
       WHATSIAPP_LOGOUT_EXEC_PATH: process.execPath,
       WHATSIAPP_LOGOUT_PACKAGED: app.isPackaged ? "1" : "0",
       WHATSIAPP_LOGOUT_PARENT_PID: String(process.pid),
@@ -190,11 +241,15 @@ async function iniciarHelperLogout() {
     filho.unref();
 
     console.log(
-      `[SESSION LOGOUT] HELPER_STARTED | pid=${filho.pid || 0} | parent=${process.pid}`,
+      `[SESSION LOGOUT] CLEANUP_HELPER_STARTED | pid=${filho.pid || 0} | parent=${process.pid}`,
+    );
+    logSessao(
+      `[SESSION LOGOUT] CLEANUP_HELPER_STARTED | pid=${filho.pid || 0} | parent=${process.pid}`,
     );
 
-    // O Baileys ja confirmou o logout remoto usando o socket vivo. Agora o app
-    // pode fechar normalmente e o helper conclui a sessao WPPConnect.
+    // As duas revogacoes remotas ja foram solicitadas e confirmadas pelos
+    // workers vivos. So agora fecha o app para liberar os arquivos e limpar
+    // exclusivamente os dados locais de autenticacao.
     setTimeout(() => {
       try {
         app.quit();
@@ -212,7 +267,10 @@ async function iniciarHelperLogout() {
   } catch (erro) {
     logoutEmAndamento = false;
     console.warn(
-      `[SESSION LOGOUT] HELPER_START_FAILED | error=${erro?.message || erro}`,
+      `[SESSION LOGOUT] LIVE_FLOW_FAILED | error=${erro?.message || erro}`,
+    );
+    logSessao(
+      `[SESSION LOGOUT] LIVE_FLOW_FAILED | error=${erro?.message || erro}`,
     );
     return {
       ok: false,
