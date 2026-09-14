@@ -7,9 +7,12 @@ const Module = require("module");
 const originalPath = path.join(__dirname, "whatsapp-worker.js");
 let fonte = fs.readFileSync(originalPath, "utf8");
 
-const marcador = `async function responderSolicitacao(id, acao, dados) {\n  try {`;
+// Aceita tanto LF quanto CRLF. No build Windows os arquivos podem chegar com
+// \r\n, enquanto o wrapper anterior procurava apenas \n e abortava o worker.
+const marcador =
+  /async function responderSolicitacao\(id, acao, dados\) \{\r?\n[ \t]*try \{/;
 
-if (!fonte.includes(marcador)) {
+if (!marcador.test(fonte)) {
   throw new Error("Nao foi possivel instalar o logout vivo do Baileys.");
 }
 
