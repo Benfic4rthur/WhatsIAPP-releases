@@ -27,6 +27,79 @@ app.on("browser-window-created", (_evento, janela) => {
   }
 });
 
+// O bootstrap antigo liberava a interface assim que o Baileys ficava pronto,
+// mesmo quando o WPPConnect ainda estava aguardando o segundo QR. Mantemos o
+// evento de pronto do Baileys retido ate existir confirmacao real de login do
+// WPPConnect. Assim, ao escanear um QR, o outro continua obrigatorio antes de
+// o app entrar no estado conectado.
+let wppAutenticadoInicial = false;
+let baileysConectadoPendente = null;
+
+function mensagemConfirmaWpp(mensagem) {
+  if (!mensagem || mensagem.tipo !== "evento") return false;
+
+  if (mensagem.evento === "wpp-qr-read") return true;
+
+  if (
+    mensagem.evento === "wpp-ready" &&
+    mensagem.dados?.qrConfirmado === true
+  ) {
+    return true;
+  }
+
+  if (
+    mensagem.evento === "sync-stage" &&
+    ["wpp-autenticado", "full-ready"].includes(
+      String(mensagem.dados?.etapa || ""),
+    )
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+function mensagemDesautenticaWpp(mensagem) {
+  if (!mensagem || mensagem.tipo !== "evento") return false;
+
+  if (mensagem.evento === "wpp-qr") return true;
+
+  if (mensagem.evento === "wpp-status") {
+    const texto = String(mensagem.dados?.texto || "").toLowerCase();
+    return [
+      "notlogged",
+      "disconnectedmobile",
+      "qrreadfail",
+      "qrreaderror",
+      "deletetoken",
+    ].includes(texto);
+  }
+
+  return false;
+}
+
+function ehBaileysConectado(mensagem) {
+  return (
+    mensagem?.tipo === "evento" &&
+    mensagem?.evento === "status" &&
+    String(mensagem?.dados?.tipo || "").toLowerCase() === "conectado"
+  );
+}
+
+function liberarBaileysConectadoPendente() {
+  const pendente = baileysConectadoPendente;
+  baileysConectadoPendente = null;
+
+  if (!pendente?.worker || !pendente?.mensagem) return;
+
+  console.log("[LOGIN GATE] BAILEYS_READY_RELEASED");
+  workerThreads.Worker.prototype.emit.call(
+    pendente.worker,
+    "message",
+    pendente.mensagem,
+  );
+}
+
 // Roteia os dois workers por wrappers pequenos que adicionam logout remoto
 // usando as sessoes que ja estao autenticadas e ativas. Isso evita recriar
 // sessoes depois que o app fecha, quando credenciais locais podem mudar de
@@ -47,6 +120,16 @@ if (!global.__whatsiappWorkerRouteInstalled) {
 
       super(arquivoReal, options);
 
+      this.__whatsiappTipoWorker = ehBaileys
+        ? "baileys"
+        : ehWpp
+          ? "wpp"
+          : null;
+
+      if (ehWpp) {
+        wppAutenticadoInicial = false;
+      }
+
       if (ehBaileys || ehWpp) {
         const chave = ehBaileys ? "baileys" : "wpp";
         global.__whatsiappWorkers = global.__whatsiappWorkers || {};
@@ -58,6 +141,49 @@ if (!global.__whatsiappWorkerRouteInstalled) {
           }
         });
       }
+    }
+
+    emit(evento, ...args) {
+      if (evento !== "message" || !this.__whatsiappTipoWorker) {
+        return super.emit(evento, ...args);
+      }
+
+      const mensagem = args[0];
+
+      if (this.__whatsiappTipoWorker === "wpp") {
+        if (mensagemDesautenticaWpp(mensagem)) {
+          wppAutenticadoInicial = false;
+        }
+
+        const confirmou = mensagemConfirmaWpp(mensagem);
+        if (confirmou) {
+          wppAutenticadoInicial = true;
+          console.log("[LOGIN GATE] WPP_AUTH_CONFIRMED");
+        }
+
+        const resultado = super.emit(evento, ...args);
+
+        if (confirmou && baileysConectadoPendente) {
+          setImmediate(liberarBaileysConectadoPendente);
+        }
+
+        return resultado;
+      }
+
+      if (
+        this.__whatsiappTipoWorker === "baileys" &&
+        ehBaileysConectado(mensagem) &&
+        !wppAutenticadoInicial
+      ) {
+        baileysConectadoPendente = {
+          worker: this,
+          mensagem,
+        };
+        console.log("[LOGIN GATE] BAILEYS_READY_WAITING_WPP_AUTH");
+        return true;
+      }
+
+      return super.emit(evento, ...args);
     }
   }
 
