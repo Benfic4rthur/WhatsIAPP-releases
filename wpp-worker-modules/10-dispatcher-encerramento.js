@@ -669,12 +669,19 @@ parentPort.on("message", (mensagem) => {
   }
 });
 
-iniciar().catch((erro) => {
+iniciar().catch(async (erro) => {
   console.error("Falha ao iniciar WPPConnect:", erro);
 
   enviar("wpp-status", {
     texto: erro?.message || "Falha ao iniciar módulo de Arquivadas.",
   });
+
+  // Se a inicialização falhar depois que o Chromium abriu, feche-o antes de
+  // encerrar o worker. Isso evita deixar o perfil bloqueado para a tentativa
+  // seguinte e impede a restauração de várias abas do WhatsApp.
+  try {
+    await client?.close?.();
+  } catch {}
 
   throw erro;
 });

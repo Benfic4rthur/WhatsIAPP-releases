@@ -1,6 +1,7 @@
 "use strict";
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const vm = require('node:vm');
 const { EventEmitter } = require('node:events');
@@ -130,6 +131,57 @@ async function testarWpp() {
     clearInterval: noop, setInterval: noop,
   });
   vm.runInContext(ler('wpp-worker-modules/05-inicializacao-wpp.js'), c);
+  assert.equal(
+    c.processoWppEhChromeDoPerfil(
+      {
+        nome: 'chrome.exe',
+        comando: 'chrome.exe --user-data-dir=/perfil-de-teste/wppconnect-profile',
+      },
+      '/perfil-de-teste/wppconnect-profile',
+    ),
+    true,
+    'Reconhece somente o Chromium que usa exatamente o perfil do WPPConnect',
+  );
+  assert.equal(
+    c.processoWppEhChromeDoPerfil(
+      {
+        nome: '/Aplicativos/Google',
+        comando:
+          'Chrome for Testing --user-data-dir="/perfil de teste/wppconnect-profile"',
+      },
+      '/perfil de teste/wppconnect-profile',
+    ),
+    true,
+    'Reconhece o comando do Chrome no macOS mesmo com espaços no caminho',
+  );
+  assert.equal(
+    c.processoWppEhChromeDoPerfil(
+      { nome: 'chrome.exe', comando: 'chrome.exe --user-data-dir=/outro-perfil' },
+      '/perfil-de-teste/wppconnect-profile',
+    ),
+    false,
+    'Nao encerra outro Chrome do usuario',
+  );
+  const perfilTemporario = fs.mkdtempSync(path.join(os.tmpdir(), 'whatsiapp-wpp-profile-'));
+  const pastaDefault = path.join(perfilTemporario, 'Default');
+  const pastaSessoes = path.join(pastaDefault, 'Sessions');
+  const arquivoAuth = path.join(pastaDefault, 'IndexedDB', 'auth-preservada');
+  const preferencias = path.join(pastaDefault, 'Preferences');
+  fs.mkdirSync(pastaSessoes, { recursive: true });
+  fs.mkdirSync(path.dirname(arquivoAuth), { recursive: true });
+  fs.writeFileSync(path.join(pastaSessoes, 'Session_1'), 'aba antiga');
+  fs.writeFileSync(path.join(pastaSessoes, 'Tabs_1'), 'aba antiga');
+  fs.writeFileSync(arquivoAuth, 'credencial');
+  fs.writeFileSync(preferencias, JSON.stringify({ profile: { exit_type: 'Crashed' } }));
+  c.fs = fs;
+  assert.equal(c.normalizarPerfilWppAntesDoChrome(perfilTemporario), 2);
+  assert.deepEqual(fs.readdirSync(pastaSessoes), [], 'Remove somente a restauracao de abas');
+  assert.equal(fs.readFileSync(arquivoAuth, 'utf8'), 'credencial', 'Preserva dados de autenticacao');
+  assert.deepEqual(
+    JSON.parse(fs.readFileSync(preferencias, 'utf8')).profile,
+    { exit_type: 'Normal', exited_cleanly: true },
+  );
+  fs.rmSync(perfilTemporario, { recursive: true, force: true });
   c.migrarPerfilWppLegado = noop;
   const inicio = c.iniciar();
   await tick();

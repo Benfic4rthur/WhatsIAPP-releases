@@ -46,7 +46,166 @@ async function confirmarAutenticacaoWpp(origem) {
   }
 }
 
-function limparBloqueioPerfilWppStale() {
+function processoWppExiste(pid) {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (erro) {
+    return erro?.code !== "ESRCH";
+  }
+}
+
+function executarProcessoWpp(arquivo, argumentos, timeout = 5000) {
+  return new Promise((resolve, reject) => {
+    execFile(
+      arquivo,
+      argumentos,
+      { encoding: "utf8", timeout, windowsHide: true },
+      (erro, stdout, stderr) => {
+        if (erro) {
+          reject(erro);
+          return;
+        }
+
+        resolve({ stdout: String(stdout || ""), stderr: String(stderr || "") });
+      },
+    );
+  });
+}
+
+async function obterProcessoWpp(pid) {
+  try {
+    if (process.platform === "win32") {
+      const script =
+        `$p = Get-CimInstance Win32_Process -Filter \"ProcessId = ${pid}\"; ` +
+        `if ($p) { $p | Select-Object ProcessId,ParentProcessId,Name,CommandLine | ConvertTo-Json -Compress }`;
+      const { stdout } = await executarProcessoWpp(
+        "powershell.exe",
+        ["-NoProfile", "-NonInteractive", "-Command", script],
+      );
+      const dados = stdout.trim() ? JSON.parse(stdout.trim()) : null;
+      return dados
+        ? {
+            pid: Number(dados.ProcessId || pid),
+            ppid: Number(dados.ParentProcessId || 0),
+            nome: String(dados.Name || ""),
+            comando: String(dados.CommandLine || ""),
+          }
+        : null;
+    }
+
+    const { stdout } = await executarProcessoWpp("ps", [
+      "-p",
+      String(pid),
+      "-o",
+      "ppid=",
+      "-o",
+      "comm=",
+      "-o",
+      "command=",
+    ]);
+    const linha = stdout.trim();
+    const match = linha.match(/^\s*(\d+)\s+(\S+)\s+([\s\S]+)$/);
+
+    return match
+      ? {
+          pid,
+          ppid: Number(match[1] || 0),
+          nome: String(match[2] || ""),
+          comando: String(match[3] || ""),
+        }
+      : null;
+  } catch (erro) {
+    console.warn(
+      `WPPConnect: não foi possível inspecionar o processo ${pid}:`,
+      erro?.message || erro,
+    );
+    return null;
+  }
+}
+
+function processoWppEhChromeDoPerfil(processo, perfil) {
+  const nome = String(processo?.nome || "").toLowerCase();
+  const comando = String(processo?.comando || "");
+  const perfilNormalizado = path.resolve(perfil);
+  const processoTexto = `${nome} ${comando}`.toLowerCase();
+  const comandoNormalizado = comando.toLowerCase();
+  const pareceChrome =
+    processoTexto.includes("chrome") || processoTexto.includes("chromium");
+  const argumentosPerfil = [
+    `--user-data-dir=${perfilNormalizado}`,
+    `--user-data-dir=\"${perfilNormalizado}\"`,
+    `--user-data-dir='${perfilNormalizado}'`,
+  ];
+
+  return (
+    pareceChrome &&
+    argumentosPerfil.some((argumento) =>
+      comandoNormalizado.includes(argumento.toLowerCase()),
+    )
+  );
+}
+
+async function encerrarChromeWppOrfao(pid, perfil) {
+  const processo = await obterProcessoWpp(pid);
+
+  if (!processo || !processoWppEhChromeDoPerfil(processo, perfil)) {
+    return false;
+  }
+
+  const paiExiste = processoWppExiste(processo.ppid);
+  const orfao =
+    process.platform === "win32"
+      ? processo.ppid <= 0 || !paiExiste
+      : processo.ppid === 1;
+
+  if (!orfao) {
+    console.warn(
+      `WPPConnect: perfil em uso por uma instância ativa ` +
+        `(chrome=${pid}, parent=${processo.ppid}).`,
+    );
+    return false;
+  }
+
+  console.warn(
+    `WPPConnect: encerrando Chromium órfão do perfil ` +
+      `(chrome=${pid}, parent=${processo.ppid}).`,
+  );
+
+  try {
+    if (process.platform === "win32") {
+      await executarProcessoWpp(
+        "taskkill.exe",
+        ["/PID", String(pid), "/T", "/F"],
+        10000,
+      );
+    } else {
+      process.kill(pid, "SIGTERM");
+
+      for (let tentativa = 0; tentativa < 30 && processoWppExiste(pid); tentativa++) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+
+      if (processoWppExiste(pid)) {
+        process.kill(pid, "SIGKILL");
+      }
+    }
+  } catch (erro) {
+    if (processoWppExiste(pid)) {
+      console.warn(
+        `WPPConnect: falha ao encerrar Chromium órfão ${pid}:`,
+        erro?.message || erro,
+      );
+      return false;
+    }
+  }
+
+  return !processoWppExiste(pid);
+}
+
+async function limparBloqueioPerfilWppStale() {
   const perfil = path.join(
     workerData.userDataPath,
     "wppconnect-profile",
@@ -56,13 +215,12 @@ function limparBloqueioPerfilWppStale() {
   try {
     const alvo = fs.readlinkSync(bloqueio);
     const pid = Number(String(alvo).match(/-(\d+)$/)?.[1] || 0);
-    if (pid > 0) {
-      try {
-        process.kill(pid, 0);
+    if (pid > 0 && processoWppExiste(pid)) {
+      const encerrado = await encerrarChromeWppOrfao(pid, perfil);
+
+      if (!encerrado && processoWppExiste(pid)) {
         console.warn(`WPPConnect: perfil ainda usado pelo Chrome (pid=${pid}).`);
-        return;
-      } catch (erro) {
-        if (erro?.code !== "ESRCH") return;
+        return false;
       }
     }
 
@@ -76,11 +234,68 @@ function limparBloqueioPerfilWppStale() {
       }
     }
     console.log("WPPConnect: bloqueio stale do perfil removido.");
+    return true;
   } catch (erro) {
     if (erro?.code !== "ENOENT") {
       console.warn("WPPConnect: não foi possível verificar bloqueio do perfil:", erro?.message || erro);
     }
+    return erro?.code === "ENOENT";
   }
+}
+
+function normalizarPerfilWppAntesDoChrome(perfil) {
+  const pastaDefault = path.join(perfil, "Default");
+  const pastaSessoes = path.join(pastaDefault, "Sessions");
+  const preferencias = path.join(pastaDefault, "Preferences");
+  let sessoesRemovidas = 0;
+
+  // Um Chromium morto à força grava todas as abas para restauração. Depois de
+  // várias tentativas, dezenas de WhatsApp Web são restaurados ao mesmo tempo
+  // e cada um mostra "aberto em outra janela". Esses arquivos guardam abas,
+  // não a autenticação do WhatsApp, que permanece no restante do perfil.
+  try {
+    for (const nome of fs.readdirSync(pastaSessoes)) {
+      fs.rmSync(path.join(pastaSessoes, nome), {
+        recursive: true,
+        force: true,
+      });
+      sessoesRemovidas++;
+    }
+  } catch (erro) {
+    if (erro?.code !== "ENOENT") {
+      console.warn(
+        "WPPConnect: não foi possível limpar abas restauradas:",
+        erro?.message || erro,
+      );
+    }
+  }
+
+  try {
+    const dados = JSON.parse(fs.readFileSync(preferencias, "utf8"));
+    dados.profile = dados.profile || {};
+    dados.profile.exit_type = "Normal";
+    dados.profile.exited_cleanly = true;
+
+    const temporario = `${preferencias}.whatsiapp.tmp`;
+    fs.writeFileSync(temporario, JSON.stringify(dados), "utf8");
+    fs.renameSync(temporario, preferencias);
+  } catch (erro) {
+    if (erro?.code !== "ENOENT") {
+      console.warn(
+        "WPPConnect: não foi possível normalizar o estado do Chromium:",
+        erro?.message || erro,
+      );
+    }
+  }
+
+  if (sessoesRemovidas > 0) {
+    console.log(
+      `WPPConnect: ${sessoesRemovidas} arquivos de abas antigas removidos; ` +
+        "autenticação preservada.",
+    );
+  }
+
+  return sessoesRemovidas;
 }
 
 function migrarPerfilWppLegado() {
@@ -345,7 +560,15 @@ async function iniciar() {
   enviarEtapaSincronizacao("wpp-create-call");
 
   migrarPerfilWppLegado();
-  limparBloqueioPerfilWppStale();
+  const perfilDisponivel = await limparBloqueioPerfilWppStale();
+  if (!perfilDisponivel) {
+    throw new Error(
+      "O perfil do WPPConnect está aberto por outra instância do WhatsIAPP.",
+    );
+  }
+  normalizarPerfilWppAntesDoChrome(
+    path.join(workerData.userDataPath, "wppconnect-profile"),
+  );
 
   client = await wppconnect.create({
     session: "whatsiapp-arquivo",
