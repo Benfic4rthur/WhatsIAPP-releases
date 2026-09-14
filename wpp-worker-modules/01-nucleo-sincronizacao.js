@@ -710,7 +710,6 @@ async function verificarProntidao() {
   }
 
   let estado = null;
-  let mainReady = false;
   let isFullReady = false;
 
   try {
@@ -724,12 +723,6 @@ async function verificarProntidao() {
   } catch {}
 
   try {
-    if (typeof client.isMainReady === "function") {
-      mainReady = !!(await client.isMainReady());
-    }
-  } catch {}
-
-  try {
     if (client?.page) {
       isFullReady = !!(await client.page.evaluate(() => {
         return !!(window.WPP && window.WPP.isFullReady);
@@ -737,11 +730,8 @@ async function verificarProntidao() {
     }
   } catch {}
 
-  // A leitura do QR pode ser confirmada pelos eventos de estado sem passar
-  // novamente pelo statusFind. O polling tambem cobre eventos ja ocorridos.
-  if (mainReady || String(estado || "").toUpperCase() === "CONNECTED") {
-    confirmarAutenticacaoWpp("poll:autenticado");
-  }
+  // API publica de autenticacao, inclusive para sessao restaurada e revogada.
+  if (!(await confirmarAutenticacaoWpp("poll:autenticado"))) return false;
 
   if (isFullReady && !fullReady) {
     fullReady = true;
@@ -841,13 +831,19 @@ async function atualizarEstadoArquivamento(emitir = true, forcar = false) {
   sincronizando = true;
 
   try {
+    const revisao = revisaoAutenticacaoWpp;
     const chats = await listarChatsRobusto();
 
     if (chats.length === 0) {
-      console.log("WPPConnect ainda não disponibilizou chats.");
-
-      return ultimoEstado;
+      // Os fallbacks convertem erros em []; confirme vazio na API publica.
+      // Somente uma leitura bem-sucedida apos FULL_READY e um snapshot vazio.
+      const confirmacao = pronto ? await client.listChats().catch(() => null) : null;
+      if (!Array.isArray(confirmacao) || confirmacao.length !== 0) {
+        console.log("WPPConnect ainda não disponibilizou chats.");
+        return ultimoEstado;
+      }
     }
+    if (!qrAceito || revisao !== revisaoAutenticacaoWpp) return ultimoEstado;
 
     const novoEstado = [];
     const novosAliases = new Map();
@@ -882,6 +878,8 @@ async function atualizarEstadoArquivamento(emitir = true, forcar = false) {
         naoLidas: normalizarNaoLidasChatWpp(chat?.unreadCount),
       });
     }
+
+    if (!qrAceito || revisao !== revisaoAutenticacaoWpp) return ultimoEstado;
 
     // Durante a primeira sincronização o WhatsApp pode devolver
     // listas parciais. Não deixa uma leitura menor apagar

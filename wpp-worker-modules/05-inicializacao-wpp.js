@@ -1,27 +1,49 @@
-function confirmarAutenticacaoWpp(origem) {
-  const origemNormalizada = String(origem || "").toLowerCase();
-  const confirmacaoQR =
-    origemNormalizada === "qrreadsuccess" ||
-    origemNormalizada === "islogged";
+let revisaoAutenticacaoWpp = 0;
+let verificacaoAutenticacaoWpp = null;
 
-  // CONNECTED pode chegar antes do status que confirma a leitura do QR.
-  // Enquanto houver um QR aguardando leitura, não escondemos o QR.
-  if (qrAguardandoLeitura && !confirmacaoQR) {
-    console.log(
-      `WPPConnect: estado ${origem} ignorado enquanto o QR aguarda leitura.`,
-    );
-    return;
+function invalidarAutenticacaoWpp(origem) {
+  revisaoAutenticacaoWpp++;
+  qrAceito = false;
+  fullReady = false;
+  whatsappPronto = false;
+  prontidaoInicialFinalizada = false;
+  estadoPrivacidadeCompleto = false;
+  enviar("sessao-autenticada", { autenticada: false, origem });
+}
+
+async function confirmarAutenticacaoWpp(origem) {
+  if (encerrando || !client) return false;
+  if (verificacaoAutenticacaoWpp) return verificacaoAutenticacaoWpp;
+
+  const revisao = revisaoAutenticacaoWpp;
+  verificacaoAutenticacaoWpp = (async () => {
+    // inChat, MAIN e FULL_READY sao estados da pagina, nao prova de login.
+    // Falha de contexto durante navegacao e desconhecida, nunca autenticada.
+    const autenticada = await client.isAuthenticated().catch(() => null);
+    if (encerrando || revisao !== revisaoAutenticacaoWpp) return false;
+    if (autenticada !== true) {
+      if (autenticada === false && qrAceito) invalidarAutenticacaoWpp(origem);
+      return false;
+    }
+    if (!qrAceito) {
+      qrAceito = true;
+      qrAguardandoLeitura = false;
+      enviar("sessao-autenticada", { autenticada: true, origem });
+      enviarEtapaSincronizacao("wpp-autenticado", origem);
+      enviar("wpp-qr-read", { status: origem });
+      enviar("wpp-ready", {
+        conectado: true,
+        sincronizando: true,
+        qrConfirmado: true,
+      });
+    }
+    return true;
+  })();
+  try {
+    return await verificacaoAutenticacaoWpp;
+  } finally {
+    verificacaoAutenticacaoWpp = null;
   }
-
-  if (qrAceito) return;
-  qrAguardandoLeitura = false;
-  qrAceito = true;
-  enviarEtapaSincronizacao("wpp-autenticado", origem);
-  enviar("wpp-ready", {
-    conectado: true,
-    sincronizando: true,
-    qrConfirmado: confirmacaoQR,
-  });
 }
 
 function limparBloqueioPerfilWppStale() {
@@ -179,6 +201,7 @@ async function concluirProntidaoInicial() {
     encerrando ||
     !client ||
     !fullReady ||
+    !qrAceito ||
     prontidaoInicialFinalizada ||
     preparandoProntidaoInicial
   ) {
@@ -205,12 +228,13 @@ async function concluirProntidaoInicial() {
       "Carregando chats e aliases",
     );
 
+    const revisao = revisaoAutenticacaoWpp;
     const estado = await atualizarEstadoArquivamento(true, true);
+    if (encerrando || !qrAceito || revisao !== revisaoAutenticacaoWpp) return false;
 
-    const temEstado =
-      Array.isArray(estado) && estado.length > 0 && ultimoEstado.length > 0;
-
-    const aliasesProntos = aliasesParaChat.size > 0;
+    // Uma conta sem conversas tambem pode estar completamente sincronizada.
+    const temEstado = Array.isArray(estado);
+    const aliasesProntos = temEstado && (estado.length === 0 || aliasesParaChat.size > 0);
 
     const pronto = estadoPrivacidadeCompleto && temEstado && aliasesProntos;
 
@@ -260,15 +284,22 @@ async function concluirProntidaoInicial() {
 function iniciarMonitorProntidao() {
   clearInterval(timerProntidao);
 
+  let verificando = false;
   timerProntidao = setInterval(async () => {
-    if (encerrando || !client) {
+    if (encerrando || !client || verificando) {
       return;
     }
 
-    const agoraPronto = await verificarProntidao();
-
-    if (agoraPronto && !prontidaoInicialFinalizada) {
-      await concluirProntidaoInicial();
+    verificando = true;
+    try {
+      const agoraPronto = await verificarProntidao();
+      if (agoraPronto && !prontidaoInicialFinalizada) {
+        await concluirProntidaoInicial();
+      }
+    } catch (erro) {
+      console.warn("WPPConnect: falha ao verificar prontidao:", erro?.message || erro);
+    } finally {
+      verificando = false;
     }
   }, 500);
 }
@@ -304,10 +335,6 @@ async function iniciar() {
 
   enviarEtapaSincronizacao("wpp-iniciando");
 
-  const tokenStore = new wppconnect.tokenStore.FileTokenStore({
-    path: path.join(workerData.userDataPath, "wppconnect-tokens"),
-  });
-
   enviar("wpp-status", {
     texto: "Iniciando módulo de Arquivadas...",
   });
@@ -323,8 +350,6 @@ async function iniciar() {
   client = await wppconnect.create({
     session: "whatsiapp-arquivo",
 
-    tokenStore,
-
     headless: true,
     logQR: false,
 
@@ -332,8 +357,8 @@ async function iniciar() {
     // o WhatsApp Web ainda está sincronizando.
     autoClose: 600000,
 
-    // Presence must become available as soon as the WPP client exists.
-    // Do not wait for the whole device sync to finish before returning the client.
+    // Mantem o cliente acessivel ao logout remoto durante o login.
+    // waitForLogin() e chamado explicitamente abaixo, com o cliente atribuido.
     waitForLogin: false,
     deviceSyncTimeout: 0,
 
@@ -373,7 +398,7 @@ async function iniciar() {
       // antes de perceber que a sessão foi desvinculada no celular.
       // Nesse caso qrAceito poderia ficar true e esconder um QR novo.
       // Sempre que um QR real for gerado, a sessão está aguardando login.
-      qrAceito = false;
+      invalidarAutenticacaoWpp("qr");
       qrAguardandoLeitura = true;
 
       console.log(`WPPConnect: QR gerado, tentativa ${attempts}.`);
@@ -396,47 +421,12 @@ async function iniciar() {
         statusNormalizado === "qrreaderror" ||
         statusNormalizado === "deletetoken"
       ) {
-        qrAceito = false;
+        invalidarAutenticacaoWpp(statusNormalizado);
       }
 
-      if (statusNormalizado === "qrreadsuccess" || statusNormalizado === "islogged") {
-        // Somente estes estados confirmam que o QR foi aceito. Estados como
-        // syncing/inchat podem chegar antes da leitura e não podem esconder
-        // o QR que o usuário ainda precisa escanear.
-        qrAguardandoLeitura = false;
-        enviar("wpp-qr-read", { status: statusNormalizado });
-        confirmarAutenticacaoWpp(statusNormalizado);
-      } else if (
-        statusNormalizado === "inchat" ||
-        statusNormalizado === "syncing"
-      ) {
-        if (qrAguardandoLeitura) {
-          enviarEtapaSincronizacao(
-            statusNormalizado === "syncing"
-              ? "wpp-sincronizando"
-              : "wpp-interface",
-            statusNormalizado,
-          );
-          enviar("wpp-status", {
-            texto: `${statusTexto} — aguardando leitura do QR Code`,
-          });
-          return;
-        }
-
-        qrAceito = true;
-
-        if (statusNormalizado === "syncing") {
-          enviarEtapaSincronizacao("wpp-sincronizando", statusNormalizado);
-        } else if (statusNormalizado === "inchat") {
-          enviarEtapaSincronizacao("wpp-interface", statusNormalizado);
-        }
-
-        // Fecha o modal de QR assim que o celular aceita a leitura.
-        // A sincronização do WPPConnect continua em background.
-        enviar("wpp-ready", {
-          conectado: true,
-          sincronizando: statusNormalizado === "syncing",
-        });
+      if (["qrreadsuccess", "islogged", "inchat", "syncing"].includes(statusNormalizado)) {
+        // Apenas solicita verificacao pela API publica; nenhum texto autentica.
+        void confirmarAutenticacaoWpp(statusNormalizado);
       }
 
       enviar("wpp-status", {
@@ -505,4 +495,9 @@ async function iniciar() {
   console.log("WPPConnect: aguardando FULL_READY antes de listar conversas.");
 
   iniciarPolling();
+
+  // waitForLogin=false sozinho nao executa o ciclo que emite
+  // notLogged/isLogged/qrReadSuccess. O QR continua vindo de catchQR.
+  await client.waitForLogin();
+  await confirmarAutenticacaoWpp("waitForLogin");
 }

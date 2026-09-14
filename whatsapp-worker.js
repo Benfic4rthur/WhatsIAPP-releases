@@ -4426,8 +4426,11 @@ async function iniciarWhatsApp() {
       const { connection, lastDisconnect, qr } = update;
 
       if (qr) {
+        enviar("sessao-autenticada", { autenticada: false });
         try {
           const imagem = await QRCode.toDataURL(qr);
+          // O QR pode terminar de renderizar depois do open ou de outro socket.
+          if (minhaGeracao !== geracaoSocket || baileysConectadoParaFotos) return;
 
           enviarEtapaSincronizacao("qr");
           enviar("qr", imagem);
@@ -4447,6 +4450,7 @@ async function iniciarWhatsApp() {
         baileysConectadoParaFotos = true;
         baileysConectadoEm = Date.now();
 
+        enviar("sessao-autenticada", { autenticada: true });
         enviarEtapaSincronizacao("baileys-conectado");
 
         conectando = false;
@@ -4479,6 +4483,7 @@ async function iniciarWhatsApp() {
         return;
       }
 
+      enviar("sessao-autenticada", { autenticada: false });
       baileysConectadoParaFotos = false;
       baileysConectadoEm = 0;
       conectando = false;

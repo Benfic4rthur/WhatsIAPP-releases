@@ -44,21 +44,12 @@ let qrOrigemAtiva = null;
 function atualizarQrConexao(origem, imagem) {
   qrsPendentes[origem] = imagem || null;
 
-  if (imagem) {
-    // O QR mais recente é o que precisa estar visível. Isso evita que o QR
-    // do Baileys esconda o segundo QR do WPPConnect durante a autenticação.
-    qrOrigemAtiva = origem;
-  } else if (qrOrigemAtiva === origem) {
-    qrOrigemAtiva = qrsPendentes.baileys
-      ? "baileys"
-      : qrsPendentes.wpp
-        ? "wpp"
-        : null;
-  }
-
-  const qrAtual = qrOrigemAtiva
-    ? qrsPendentes[qrOrigemAtiva]
-    : qrsPendentes.baileys || qrsPendentes.wpp;
+  qrOrigemAtiva = qrsPendentes.baileys
+    ? "baileys"
+    : baileysProntoInicial && qrsPendentes.wpp
+      ? "wpp"
+      : null;
+  const qrAtual = qrOrigemAtiva ? qrsPendentes[qrOrigemAtiva] : null;
 
   enviarParaTela("qr", qrAtual);
 }
@@ -83,12 +74,11 @@ let estadoPrivacidadeCompleto = false;
 const estadoPrivacidadeConhecido = new Set();
 const mensagensPendentesPrivacidade = [];
 let cachePrivacidadeCarregado = false;
-let timerFallbackPrivacidadeInicial = null;
-let fallbackPrivacidadeInicialAtivado = false;
 
 let wppRecepcaoAoVivoPronta = false;
 let wppFullReady = false;
 let baileysProntoInicial = false;
+let wppAutenticado = false;
 let fotosPrincipaisProntas = false;
 let fullReadyInicialLiberado = false;
 let dadosFullReadyInicialPendente = null;
@@ -891,46 +881,6 @@ function carregarCachePrivacidade() {
   }
 }
 
-function ativarFallbackPrivacidadeInicial() {
-  if (
-    fallbackPrivacidadeInicialAtivado ||
-    encerrando ||
-    !cachePrivacidadeCarregado ||
-    estadoPrivacidadeConhecido.size === 0 ||
-    estadoPrivacidadeCompleto
-  ) {
-    return false;
-  }
-
-  fallbackPrivacidadeInicialAtivado = true;
-  estadoPrivacidadePronto = true;
-  estadoPrivacidadeCompleto = true;
-
-  console.warn(
-    "[READY FALLBACK] WPPConnect ainda sem chats; liberando com o cache de privacidade e mantendo a sincronizacao em segundo plano.",
-  );
-
-  enviarParaTela("status", {
-    texto: "Conectado — sincronização do WPPConnect em segundo plano",
-    tipo: "conectado",
-  });
-
-  enviarConversasMescladas();
-  liberarMensagensPendentesPrivacidade();
-  tentarLiberarFullReadyInicial();
-
-  return true;
-}
-
-function agendarFallbackPrivacidadeInicial() {
-  clearTimeout(timerFallbackPrivacidadeInicial);
-
-  timerFallbackPrivacidadeInicial = setTimeout(() => {
-    timerFallbackPrivacidadeInicial = null;
-    ativarFallbackPrivacidadeInicial();
-  }, 15000);
-}
-
 function serializarId(valor) {
   if (!valor) return null;
 
@@ -1377,8 +1327,6 @@ function atualizarEstadoArquivamento(payload) {
   const chavesNaoLidasVistas = new Set();
 
   if (completo) {
-    clearTimeout(timerFallbackPrivacidadeInicial);
-    timerFallbackPrivacidadeInicial = null;
     estadoArquivamento.clear();
     estadoTrancamento.clear();
     estadoAliasesPrivacidade.clear();
@@ -1470,9 +1418,10 @@ function tentarLiberarFullReadyInicial() {
   if (
     fullReadyInicialLiberado ||
     !baileysProntoInicial ||
+    !wppAutenticado ||
+    !wppFullReady ||
     !estadoPrivacidadeCompleto ||
     !Array.isArray(conversasBase) ||
-    conversasBase.length === 0 ||
     !fotosPrincipaisProntas
   ) {
     return false;
@@ -1483,7 +1432,7 @@ function tentarLiberarFullReadyInicial() {
   const dadosEtapa = {
     etapa: "full-ready",
     origem: "bootstrap",
-    detalhe: "Baileys + cache local + conversas principais + fotos principais.",
+    detalhe: "Baileys + WPPConnect autenticados + sincronizacao + fotos principais.",
   };
 
   ultimaEtapaSincronizacaoInicial = { ...dadosEtapa };
@@ -1501,9 +1450,9 @@ function tentarLiberarFullReadyInicial() {
       : tempoMonotonicoMs() - diagnosticoInicioInicializacao;
 
   console.log(
-    `[READY RAPIDO] LIBERADO EM ${formatarTempoDiagnostico(tempoMs)} | ` +
-      `baileys=true | privacidade_cache=true | conversas=${conversasBase.length} | ` +
-      `fotos_principais=true | wpp_background=${wppFullReady}`,
+    `[LOGIN FLOW] INTERFACE_READY EM ${formatarTempoDiagnostico(tempoMs)} | ` +
+      `baileys=true | wpp_autenticado=true | privacidade_atual=true | conversas=${conversasBase.length} | ` +
+      `fotos_principais=true | wpp_full_ready=${wppFullReady}`,
   );
 
   return true;
@@ -1541,6 +1490,31 @@ function registrarWorker(worker, tipoWorker) {
     if (!mensagem) return;
 
     if (mensagem.tipo === "evento") {
+      if (mensagem.evento === "sessao-autenticada") {
+        const autenticada = mensagem.dados?.autenticada === true;
+        if (tipoWorker === "baileys") {
+          baileysProntoInicial = autenticada;
+          atualizarQrConexao("baileys", null);
+          if (autenticada) {
+            criarWorkerArquivadas();
+            enviarParaTela("baileys-pronto", { conectado: true });
+            enviarParaTela("preparar-fotos-principais", { solicitadoEm: Date.now() });
+          }
+        } else {
+          wppAutenticado = autenticada;
+          if (!autenticada) {
+            wppFullReady = false;
+            estadoPrivacidadeCompleto = false;
+            estadoPrivacidadePronto = false;
+          } else {
+            atualizarQrConexao("wpp", null);
+          }
+        }
+        console.log(`[LOGIN FLOW] ${tipoWorker.toUpperCase()}_AUTH | autenticada=${autenticada}`);
+        tentarLiberarFullReadyInicial();
+        return;
+      }
+
       if (mensagem.evento === "sync-stage") {
         const dadosEtapa = {
           ...(mensagem.dados || {}),
@@ -1552,19 +1526,13 @@ function registrarWorker(worker, tipoWorker) {
         registrarMarcoInicializacao(tipoWorker, etapaAtual, dadosEtapa.detalhe);
 
         if (tipoWorker === "wpp" && etapaAtual === "full-ready") {
+          if (!wppAutenticado) return;
           wppFullReady = true;
-
-          // O WPPConnect pode concluir a inicializacao sem emitir novamente
-          // qrreadsuccess/isLogged depois da leitura. FULL_READY e a
-          // confirmacao definitiva de que o modulo ja esta autenticado, entao
-          // nunca deixe um QR antigo reaparecer por causa desse caminho.
           atualizarQrConexao("wpp", null);
 
           dadosFullReadyInicialPendente = { ...dadosEtapa };
 
-          // O WPP continua sendo inicializado por completo, mas fora do
-          // caminho critico da abertura. Aqui apenas confirmamos o backend,
-          // liberamos fotos secundarias e mantemos o diagnostico completo.
+          // A sincronizacao atual do WPP e obrigatoria antes de liberar a tela.
           if (fullReadyInicialLiberado) {
             ultimaEtapaSincronizacaoInicial = { ...dadosEtapa };
           } else {
@@ -1583,9 +1551,7 @@ function registrarWorker(worker, tipoWorker) {
             solicitadoEm: Date.now(),
           });
 
-          // A interface pode ja ter sido liberada pelo READY rapido.
-          // Mesmo assim o renderer precisa receber o FULL_READY real do WPP
-          // para finalizar o indicador visual de sincronizacao em 100%.
+          // Atualiza o progresso; somente full-ready/bootstrap libera a tela.
           enviarParaTela("sincronizacao-etapa", {
             ...dadosEtapa,
             origem: "wpp",
@@ -1740,6 +1706,8 @@ function registrarWorker(worker, tipoWorker) {
       }
 
       if (tipoWorker === "wpp" && mensagem.evento === "wpp-qr") {
+        wppAutenticado = false;
+        wppFullReady = false;
         enviarParaTela("status", {
           texto: "Conecte o módulo de Arquivadas",
           tipo: "qr",
@@ -1751,6 +1719,7 @@ function registrarWorker(worker, tipoWorker) {
       }
 
       if (tipoWorker === "wpp" && mensagem.evento === "wpp-qr-read") {
+        if (!wppAutenticado) return;
         // Confirmação explícita do WPPConnect: agora podemos remover o QR
         // dele sem confundir sincronização com autenticação.
         atualizarQrConexao("wpp", null);
@@ -1766,7 +1735,7 @@ function registrarWorker(worker, tipoWorker) {
 
         // Só limpe o QR quando o WPP confirmar a leitura. Estados como
         // syncing/inchat podem chegar antes e não representam autenticação.
-        if (mensagem.dados?.qrConfirmado === true) {
+        if (wppAutenticado && mensagem.dados?.qrConfirmado === true) {
           atualizarQrConexao("wpp", null);
         }
 
@@ -1856,6 +1825,7 @@ function registrarWorker(worker, tipoWorker) {
       // QR/status principal continuam vindo do Baileys.
       if (tipoWorker === "baileys") {
         if (mensagem.evento === "qr") {
+          if (mensagem.dados) baileysProntoInicial = false;
           atualizarQrConexao("baileys", mensagem.dados);
           return;
         }
@@ -1863,19 +1833,8 @@ function registrarWorker(worker, tipoWorker) {
           mensagem.evento === "status" &&
           String(mensagem.dados?.tipo || "") === "conectado"
         ) {
-          baileysProntoInicial = true;
-
-          // O status conectado do Baileys encerra a autenticacao. Limpar aqui
-          // evita manter o QR anterior na tela quando a sessao ja foi lida.
-          atualizarQrConexao("baileys", null);
-
-          enviarParaTela("baileys-pronto", {
-            conectado: true,
-          });
-
-          enviarParaTela("preparar-fotos-principais", {
-            solicitadoEm: Date.now(),
-          });
+          // Trabalhos de historico tambem emitem este status visual.
+          // A autenticacao vem exclusivamente de connection.update/open.
 
           tentarLiberarFullReadyInicial();
 
@@ -1937,8 +1896,11 @@ function registrarWorker(worker, tipoWorker) {
 
     if (tipoWorker === "baileys") {
       whatsappWorker = null;
+      baileysProntoInicial = false;
     } else {
       archiveWorker = null;
+      wppAutenticado = false;
+      wppFullReady = false;
       wppRecepcaoAoVivoPronta = false;
       liberarFallbacksBaileysImediatamente();
     }
@@ -1972,6 +1934,7 @@ function registrarWorker(worker, tipoWorker) {
 
 function criarWorkerWhatsApp() {
   if (whatsappWorker) return;
+  baileysProntoInicial = false;
 
   conversasBaseHistoricoInicial = null;
   historicoGapWppExecutado = false;
@@ -1991,8 +1954,9 @@ function criarWorkerWhatsApp() {
 }
 
 function criarWorkerArquivadas() {
-  if (archiveWorker) return;
+  if (archiveWorker || !baileysProntoInicial || encerrando) return;
 
+  wppAutenticado = false;
   wppFullReady = false;
   historicoGapWppExecutado = false;
   historicoGapWppEmAndamento = false;
@@ -7829,7 +7793,6 @@ function criarJanela() {
   registrarMarcoInicializacao("app", "janela-criada");
 
   criarWorkerWhatsApp();
-  criarWorkerArquivadas();
 
   registrarMarcoInicializacao("renderer", "load-file");
   janela.loadFile(path.join(__dirname, "app.html"));
@@ -7977,7 +7940,7 @@ ipcMain.handle("obter-sincronizacao-inicial-atual", async () => {
       etapa: "full-ready",
       origem: "bootstrap",
       detalhe:
-        "Baileys + cache local + conversas principais + fotos principais.",
+        "Baileys + WPPConnect autenticados + sincronizacao + fotos principais.",
     };
   }
 
@@ -14403,7 +14366,6 @@ app.whenReady().then(() => {
   configurarIconeMacOS();
   configurarNotificacoesWindowsDev();
   carregarCachePrivacidade();
-  agendarFallbackPrivacidadeInicial();
 
   // Fotos persistidas sao carregadas sob demanda. Evita decodificar centenas
   // de imagens no caminho critico da inicializacao.

@@ -212,6 +212,9 @@ function criarModuloSincronizacaoInicial(deps = {}) {
       return;
     }
     const etapa = String(dados?.etapa || "").trim();
+    if (etapa === "full-ready" && dados?.origem !== "bootstrap") {
+      return;
+    }
     if (!etapa || etapa === ultimaEtapaSincronizacao) {
       return;
     }

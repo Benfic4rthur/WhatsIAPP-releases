@@ -2,7 +2,6 @@
 
 const fs = require("fs");
 const path = require("path");
-const { parentPort } = require("worker_threads");
 
 const MODULOS_WPP = [
   "01-nucleo-sincronizacao.js",
@@ -22,135 +21,6 @@ const diretorioModulos = path.join(__dirname, "wpp-worker-modules");
 let codigoWpp = MODULOS_WPP.map((arquivo) =>
   fs.readFileSync(path.join(diretorioModulos, arquivo), "utf8"),
 ).join("");
-
-// O WPPConnect 2.2.6 pode entrar no estado QR sem disparar catchQR.
-// Mantemos waitForLogin=false para o client ficar disponivel e instalamos
-// um fallback que consulta o QR diretamente enquanto a sessao nao estiver
-// realmente registrada. Nao confiamos em inChat/qrAceito para encerrar o
-// fallback, pois o WPPConnect pode emitir inChat antes de confirmar o login.
-const marcadorCreateResolvido =
-  /enviarEtapaSincronizacao\("wpp-create-resolved"\);/;
-
-if (!marcadorCreateResolvido.test(codigoWpp)) {
-  throw new Error("Nao foi possivel instalar o fallback de QR do WPPConnect.");
-}
-
-const injecaoQrFallback = `enviarEtapaSincronizacao("wpp-create-resolved");
-
-  let ultimoQrVisualWpp = null;
-  let tentativasQrVisualWpp = 0;
-
-  const timerQrVisualWpp = setInterval(async () => {
-    if (encerrando || !client?.page) {
-      clearInterval(timerQrVisualWpp);
-      return;
-    }
-
-    try {
-      const pagina = client.page;
-
-      const autenticada = await pagina
-        .evaluate(() => {
-          try {
-            return !!globalThis.WPP?.conn?.isRegistered?.();
-          } catch {
-            return false;
-          }
-        })
-        .catch(() => false);
-
-      if (autenticada) {
-        qrAceito = true;
-        qrAguardandoLeitura = false;
-        clearInterval(timerQrVisualWpp);
-        console.log("[QR FALLBACK] WPPCONNECT_AUTH_CONFIRMED");
-        return;
-      }
-
-      qrAceito = false;
-      qrAguardandoLeitura = true;
-
-      let base64Qr = null;
-
-      try {
-        const resultadoQr = await client.getQrCode?.();
-        if (resultadoQr?.base64Image) {
-          base64Qr = String(resultadoQr.base64Image);
-        }
-      } catch {}
-
-      if (!base64Qr) {
-        const resultadoVisual = await pagina
-          .evaluate(() => {
-            try {
-              const canvases = Array.from(document.querySelectorAll("canvas"));
-
-              for (const canvas of canvases) {
-                const rect = canvas.getBoundingClientRect();
-
-                if (
-                  rect.width < 160 ||
-                  rect.height < 160 ||
-                  Math.abs(rect.width - rect.height) > 30
-                ) {
-                  continue;
-                }
-
-                const contenedor = canvas.closest("[data-ref]");
-                const imagem = canvas.toDataURL?.();
-
-                if (!imagem) {
-                  continue;
-                }
-
-                return {
-                  base64Image: imagem,
-                  urlCode: contenedor?.getAttribute("data-ref") || null,
-                };
-              }
-            } catch {}
-
-            return null;
-          })
-          .catch(() => null);
-
-        if (resultadoVisual?.base64Image) {
-          base64Qr = String(resultadoVisual.base64Image);
-        }
-      }
-
-      if (!base64Qr) {
-        tentativasQrVisualWpp += 1;
-        if (tentativasQrVisualWpp % 10 === 0) {
-          console.log("[QR FALLBACK] WPPCONNECT_QR_NOT_FOUND");
-        }
-        return;
-      }
-
-      if (base64Qr === ultimoQrVisualWpp) {
-        return;
-      }
-
-      ultimoQrVisualWpp = base64Qr;
-
-      console.log("[QR FALLBACK] WPPCONNECT_QR_CAPTURED");
-      enviarEtapaSincronizacao("qr", "fallback-visual");
-      enviar("wpp-qr", base64Qr);
-    } catch (erro) {
-      tentativasQrVisualWpp += 1;
-      if (tentativasQrVisualWpp % 10 === 0) {
-        console.log(
-          "[QR FALLBACK] WPPCONNECT_QR_CAPTURE_ERROR | " +
-            String(erro?.message || erro || "unknown"),
-        );
-      }
-    }
-  }, 900);`;
-
-codigoWpp = codigoWpp.replace(
-  marcadorCreateResolvido,
-  injecaoQrFallback,
-);
 
 // Aceita tanto LF quanto CRLF. No build Windows os arquivos podem chegar com
 // \r\n, enquanto o wrapper anterior procurava apenas \n e abortava o worker.
@@ -174,39 +44,4 @@ const executarWpp = new Function(
   codigoWpp,
 );
 
-let wppIniciado = false;
-const mensagensAntesDoInicio = [];
-
-function iniciarWppAgora() {
-  if (wppIniciado) return;
-  wppIniciado = true;
-
-  parentPort.off("message", aguardarInicioWpp);
-  console.log("[LOGIN FLOW] WPP_WORKER_STARTING");
-
-  executarWpp(module.exports, require, module, __filename, __dirname);
-
-  if (mensagensAntesDoInicio.length) {
-    const pendentes = mensagensAntesDoInicio.splice(0);
-    setImmediate(() => {
-      for (const mensagem of pendentes) {
-        parentPort.emit("message", mensagem);
-      }
-    });
-  }
-}
-
-function aguardarInicioWpp(mensagem) {
-  if (
-    mensagem?.tipo === "controle-whatsiapp" &&
-    mensagem?.acao === "iniciar-wpp"
-  ) {
-    iniciarWppAgora();
-    return;
-  }
-
-  mensagensAntesDoInicio.push(mensagem);
-}
-
-parentPort.on("message", aguardarInicioWpp);
-console.log("[LOGIN FLOW] WPP_WORKER_WAITING_BAILEYS");
+executarWpp(module.exports, require, module, __filename, __dirname);
