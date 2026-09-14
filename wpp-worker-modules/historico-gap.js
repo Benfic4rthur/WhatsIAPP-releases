@@ -148,6 +148,124 @@ function normalizarMensagemHistoricoGapWpp(
   };
 }
 
+async function anexarReacoesHistoricoWpp(
+  mensagensBrutas,
+  mensagensNormalizadas,
+  limite = 200,
+  idsComReacaoConhecida = [],
+) {
+  if (!Array.isArray(mensagensBrutas) || !Array.isArray(mensagensNormalizadas)) {
+    return { consultadas: 0, atualizadas: 0, falhas: 0 };
+  }
+
+  const porIdWpp = new Map(
+    mensagensNormalizadas
+      .filter((item) => item?.idMensagemWpp)
+      .map((item) => [String(item.idMensagemWpp), item]),
+  );
+  const idsConhecidos = new Set(
+    (Array.isArray(idsComReacaoConhecida) ? idsComReacaoConhecida : [])
+      .map((id) => String(id || "").trim())
+      .filter(Boolean),
+  );
+  const suportaIndicador = mensagensBrutas.some((item) =>
+    Object.prototype.hasOwnProperty.call(item || {}, "hasReaction"),
+  );
+  const ids = mensagensBrutas
+    .slice(-Math.max(1, Number(limite) || 1))
+    .map((item) => ({
+      id: serializarId(item?.id),
+      consultar:
+        !suportaIndicador ||
+        item?.hasReaction === true ||
+        idsConhecidos.has(extrairIdMensagemWpp(item?.id)),
+    }))
+    .filter((item) => item.consultar)
+    .map((item) => item.id)
+    .filter((id, indice, lista) => id && lista.indexOf(id) === indice && porIdWpp.has(id));
+
+  if (!ids.length) {
+    return { consultadas: 0, atualizadas: 0, falhas: 0 };
+  }
+
+  let resultados = [];
+
+  if (client?.page && typeof client.page.evaluate === "function") {
+    try {
+      resultados = await aguardarComTimeoutWpp(
+        client.page.evaluate(async (idsMensagens) => {
+          if (typeof WPP === "undefined" || typeof WPP.chat?.getReactions !== "function") {
+            return [];
+          }
+
+          return Promise.all(
+            idsMensagens.map(async (id) => {
+              try {
+                return { id, ok: true, resultado: await WPP.chat.getReactions(id) };
+              } catch (erro) {
+                return { id, ok: false, erro: String(erro?.message || erro || "unknown") };
+              }
+            }),
+          );
+        }, ids),
+        15000,
+        null,
+      );
+    } catch {
+      resultados = [];
+    }
+  }
+
+  if (!Array.isArray(resultados) || !resultados.length) {
+    if (typeof client?.getReactions !== "function") {
+      return { consultadas: 0, atualizadas: 0, falhas: ids.length };
+    }
+
+    let proximo = 0;
+    resultados = [];
+
+    async function consultarProxima() {
+      while (true) {
+        const id = ids[proximo++];
+        if (!id) return;
+
+        try {
+          const resultado = await aguardarComTimeoutWpp(
+            client.getReactions(id),
+            3500,
+            null,
+          );
+          resultados.push({ id, ok: true, resultado });
+        } catch (erro) {
+          resultados.push({ id, ok: false, erro: String(erro?.message || erro || "unknown") });
+        }
+      }
+    }
+
+    await Promise.all(
+      Array.from({ length: Math.min(8, ids.length) }, () => consultarProxima()),
+    );
+  }
+
+  let atualizadas = 0;
+  let falhas = 0;
+
+  for (const item of resultados) {
+    if (!item?.ok) {
+      falhas++;
+      continue;
+    }
+
+    const mensagem = porIdWpp.get(String(item.id || ""));
+    if (!mensagem) continue;
+
+    mensagem.reacoes = normalizarReacoesWpp(item.resultado);
+    atualizadas++;
+  }
+
+  return { consultadas: ids.length, atualizadas, falhas };
+}
+
 async function estadosAtuaisHistoricoGapWpp() {
   const chats = await listarChatsRobusto();
   const estados = [];
@@ -425,13 +543,22 @@ async function buscarHistoricoGapWpp(dados = {}) {
         adicionadasChat++;
       }
 
+      const mensagensDaConversa = mensagens.filter(
+        (mensagem) => mensagem.id === conversaId,
+      );
+      const reacoes = await anexarReacoesHistoricoWpp(
+        lista,
+        mensagensDaConversa,
+        60,
+      );
+
       if (adicionadasChat > 0) {
         chatsComGap++;
 
         console.log(
           `[HISTORICO GAP] WPP_CHAT | conversa=${conversaId} | ` +
             `local=${item.timestampLocal} | remoto=${item.timestampWpp} | ` +
-            `mensagens=${adicionadasChat}`,
+            `mensagens=${adicionadasChat} | reacoes=${reacoes.atualizadas}`,
         );
       }
     }
@@ -483,8 +610,14 @@ async function buscarHistoricoRecenteConversaWpp(dados = {}) {
     const lista = await aguardarComTimeoutWpp(client.getMessages(chatId, { count }), 12000, null);
     if (!Array.isArray(lista) || !lista.length) continue;
     const mensagens = lista.map(m => normalizarMensagemHistoricoGapWpp(m, {}, conversaId)).filter(Boolean);
-    console.log(`[HISTORICO RECENTE] CONSULTA | conversa=${conversaId} | mensagens=${mensagens.length} | limite=${count}`);
-    return { ok: true, mensagens, limiteAtingido: lista.length >= count };
+    const reacoes = await anexarReacoesHistoricoWpp(
+      lista,
+      mensagens,
+      Math.min(200, count),
+      dados?.idsComReacao,
+    );
+    console.log(`[HISTORICO RECENTE] CONSULTA | conversa=${conversaId} | mensagens=${mensagens.length} | reacoes=${reacoes.atualizadas}/${reacoes.consultadas} | limite=${count}`);
+    return { ok: true, mensagens, reacoes, limiteAtingido: lista.length >= count };
   }
   return { ok: false, erro: 'A consulta ainda não retornou mensagens. Tente novamente.' };
 }

@@ -474,14 +474,55 @@ function converterBaileysParaWpp(valor) {
   return id;
 }
 
+function formatarNumeroContatoWpp(valor) {
+  const id = normalizarId(valor);
+
+  if (!id || (!id.endsWith("@c.us") && !id.endsWith("@s.whatsapp.net"))) {
+    return null;
+  }
+
+  const digitos = id.replace(/@(c\.us|s\.whatsapp\.net)$/i, "").replace(/\D/g, "");
+
+  if (digitos.startsWith("55") && digitos.length >= 12) {
+    const ddd = digitos.slice(2, 4);
+    const telefone = digitos.slice(4);
+
+    if (telefone.length === 9) {
+      return `+55 (${ddd}) ${telefone.slice(0, 5)}-${telefone.slice(5)}`;
+    }
+
+    if (telefone.length === 8) {
+      return `+55 (${ddd}) ${telefone.slice(0, 4)}-${telefone.slice(4)}`;
+    }
+  }
+
+  return digitos ? `+${digitos}` : null;
+}
+
 function nomeDoChat(chat) {
+  const id = normalizarId(chat?.id || chat?.contact?.id);
+
+  if (id?.endsWith("@g.us")) {
+    return chat?.name || chat?.subject || null;
+  }
+
+  if (chat?.contact?.isMe === true) {
+    return chat?.contact?.name || chat?.name || chat?.contact?.pushname || null;
+  }
+
+  if (chat?.contact?.isMyContact === true) {
+    return (
+      chat?.contact?.name ||
+      chat?.contact?.formattedName ||
+      chat?.contact?.shortName ||
+      null
+    );
+  }
+
   return (
-    chat?.contact?.name ||
-    chat?.name ||
-    chat?.contact?.formattedName ||
-    chat?.contact?.shortName ||
-    chat?.contact?.pushname ||
-    chat?.contact?.verifiedName ||
+    formatarNumeroContatoWpp(chat?.contact?.phoneNumber) ||
+    formatarNumeroContatoWpp(chat?.contact?.id) ||
+    formatarNumeroContatoWpp(chat?.id) ||
     null
   );
 }

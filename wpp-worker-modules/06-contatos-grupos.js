@@ -1,3 +1,5 @@
+let ultimaFonteContatosSalvosWpp = "nenhuma";
+
 async function listarContatosSalvosWpp() {
   if (!client || encerrando) {
     return [];
@@ -10,7 +12,7 @@ async function listarContatosSalvosWpp() {
     try {
       const todos = await client.getAllContacts();
 
-      if (Array.isArray(todos) && todos.length) {
+      if (Array.isArray(todos)) {
         contatosBrutos = todos;
         origem = "client.getAllContacts";
       }
@@ -141,6 +143,8 @@ async function listarContatosSalvosWpp() {
   console.log(
     `WPPConnect saved contacts: ${contatos.length} | source=${origem}.`,
   );
+
+  ultimaFonteContatosSalvosWpp = origem;
 
   return contatos;
 }

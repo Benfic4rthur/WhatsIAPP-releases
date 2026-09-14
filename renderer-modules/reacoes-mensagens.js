@@ -132,6 +132,23 @@ function criarModuloReacoes(dependencias = {}) {
     const chave = chaveReacoesMensagem(conversaId, msg?.idMensagem);
     const registro = chave ? reacoesMensagensPersistidas[chave] : null;
 
+    // Quando o worker consultou o WhatsApp Web, inclusive uma lista vazia e
+    // autoritativa. Ela precisa substituir o cache local para que reacoes
+    // recebidas ou removidas enquanto o aplicativo estava fechado aparecam.
+    if (Array.isArray(msg?.reacoes)) {
+      const atuais = normalizarListaReacoes(msg.reacoes);
+      const anteriores = normalizarListaReacoes(registro?.reacoes);
+
+      if (JSON.stringify(atuais) !== JSON.stringify(anteriores)) {
+        registrarReacoesLocalmente(conversaId, msg?.idMensagem, atuais);
+      }
+
+      return {
+        ...msg,
+        reacoes: atuais,
+      };
+    }
+
     if (!Array.isArray(registro?.reacoes)) {
       return msg;
     }

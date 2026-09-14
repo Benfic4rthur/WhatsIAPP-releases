@@ -494,6 +494,10 @@ function arquivoMapeamentos() {
   return path.join(workerData.userDataPath, "mapeamentos.json");
 }
 
+function arquivoContatosSalvos() {
+  return path.join(workerData.userDataPath, "contatos-salvos.json");
+}
+
 function arquivoArquivadas() {
   return path.join(workerData.userDataPath, "arquivadas.json");
 }
@@ -572,10 +576,34 @@ function ehGrupo(jid) {
 function nomePadrao(jid) {
   if (!jid) return "Contato";
 
-  return normalizarJid(jid)
+  const id = normalizarJid(jid);
+  const numero = id
     .replace("@s.whatsapp.net", "")
     .replace("@lid", "")
     .replace("@g.us", "");
+
+  if (!ehGrupo(id)) {
+    const digitos = somenteDigitos(numero);
+
+    if (digitos.startsWith("55") && digitos.length >= 12) {
+      const ddd = digitos.slice(2, 4);
+      const telefone = digitos.slice(4);
+
+      if (telefone.length === 9) {
+        return `+55 (${ddd}) ${telefone.slice(0, 5)}-${telefone.slice(5)}`;
+      }
+
+      if (telefone.length === 8) {
+        return `+55 (${ddd}) ${telefone.slice(0, 4)}-${telefone.slice(4)}`;
+      }
+    }
+
+    if (digitos) {
+      return `+${digitos}`;
+    }
+  }
+
+  return numero;
 }
 
 function pareceNomeUtil(nome, jid) {
@@ -583,6 +611,7 @@ function pareceNomeUtil(nome, jid) {
   const limpo = String(nome).trim();
   if (!limpo) return false;
   if (limpo === nomePadrao(jid)) return false;
+  if (somenteDigitos(limpo) === somenteDigitos(nomePadrao(jid))) return false;
   if (/^\d{8,}$/.test(limpo)) return false;
   return true;
 }
@@ -932,13 +961,7 @@ function aplicarNomesConhecidosNasConversas() {
   for (const conversa of conversas.values()) {
     const id = normalizarJid(conversa.id);
 
-    const candidatos = [
-      contatos.get(id)?.nome,
-      contatos.get(lidParaPn.get(id))?.nome,
-      contatos.get(pnParaLid.get(id))?.nome,
-    ].filter(Boolean);
-
-    const nome = candidatos.find((valor) => pareceNomeUtil(valor, id));
+    const nome = nomePreferidoConversa(id);
 
     if (nome && conversa.nome !== nome) {
       conversa.nome = nome;
@@ -1202,7 +1225,7 @@ function obterConversa(id) {
   if (!conversas.has(id)) {
     conversas.set(id, {
       id,
-      nome: contatos.get(id)?.nome || nomePadrao(id),
+      nome: nomePreferidoConversa(id),
       arquivada: estadoArquivadas.get(id) ?? false,
       timestamp: 0,
       mensagens: [],
@@ -1219,9 +1242,61 @@ function definirNomeContato(id, nome) {
   contatos.set(id, { nome: String(nome).trim() });
 
   const conversa = conversas.get(id);
-  if (conversa) {
-    conversa.nome = String(nome).trim();
+  if (conversa && (ehGrupo(id) || nomeContatoSalvo(id) || ehMinhaIdentidade(id))) {
+    conversa.nome = nomePreferidoConversa(id);
   }
+}
+
+function aliasesContato(id) {
+  const jid = normalizarJid(id);
+  const aliases = new Set(jid ? [jid] : []);
+
+  if (ehPn(jid)) {
+    const lid = normalizarJid(pnParaLid.get(jid));
+    if (lid) aliases.add(lid);
+  }
+
+  if (ehLid(jid)) {
+    const pn = normalizarJid(lidParaPn.get(jid));
+    if (pn) aliases.add(pn);
+  }
+
+  return Array.from(aliases);
+}
+
+function nomeContatoSalvo(id) {
+  for (const alias of aliasesContato(id)) {
+    const nome = String(contatosSalvos.get(alias)?.nome || "").trim();
+    if (nome && pareceNomeUtil(nome, id)) return nome;
+  }
+
+  return null;
+}
+
+function ehMinhaIdentidade(id) {
+  const jid = normalizarJid(id);
+  const candidatos = [sock?.user?.id, sock?.user?.lid]
+    .map(normalizarJid)
+    .filter(Boolean);
+
+  return !!jid && candidatos.some((candidato) => mesmaIdentidadeJid(jid, candidato));
+}
+
+function nomePreferidoConversa(id) {
+  const jid = normalizarJid(id);
+
+  if (ehGrupo(jid)) {
+    return contatos.get(jid)?.nome || nomePadrao(jid);
+  }
+
+  const salvo = nomeContatoSalvo(jid);
+  if (salvo) return salvo;
+
+  if (ehMinhaIdentidade(jid) && pareceNomeUtil(sock?.user?.name, jid)) {
+    return String(sock.user.name).trim();
+  }
+
+  return nomePadrao(jid);
 }
 
 function registrarContatoSalvo(id, nome) {
@@ -1252,6 +1327,73 @@ function removerContatoSalvo(id) {
   if (jid) {
     contatosSalvos.delete(jid);
   }
+}
+
+function carregarContatosSalvos() {
+  try {
+    const arquivo = arquivoContatosSalvos();
+    if (!fs.existsSync(arquivo)) return;
+
+    const lista = JSON.parse(fs.readFileSync(arquivo, "utf8"));
+    for (const item of Array.isArray(lista) ? lista : []) {
+      registrarContatoSalvo(item?.id, item?.nome);
+    }
+
+    console.log(`${contatosSalvos.size} contatos salvos carregados do cache.`);
+  } catch (erro) {
+    console.error("Erro ao carregar contatos salvos:", erro?.message || erro);
+  }
+}
+
+function salvarContatosSalvos() {
+  try {
+    const arquivo = arquivoContatosSalvos();
+    garantirPastaArquivo(arquivo);
+    fs.writeFileSync(
+      arquivo,
+      JSON.stringify(Array.from(contatosSalvos.values()), null, 2),
+      "utf8",
+    );
+  } catch (erro) {
+    console.error("Erro ao salvar contatos salvos:", erro?.message || erro);
+  }
+}
+
+function sincronizarContatosSalvosWpp(dados = {}) {
+  const lista = Array.isArray(dados?.contatos) ? dados.contatos : [];
+  contatosSalvos.clear();
+
+  for (const item of lista) {
+    const nome = String(item?.nome || "").trim();
+    const idBruto = String(item?.id || "").trim();
+    const id = idBruto.endsWith("@c.us")
+      ? idBruto.replace(/@c\.us$/i, "@s.whatsapp.net")
+      : normalizarJid(idBruto);
+    const numero = somenteDigitos(item?.numeroWhatsapp);
+    const pn = numero ? `${numero}@s.whatsapp.net` : null;
+
+    if (!nome) continue;
+    if (id) registrarContatoSalvo(id, nome);
+    if (pn) registrarContatoSalvo(pn, nome);
+    if (id && ehLid(id) && pn) {
+      lidParaPn.set(id, pn);
+      pnParaLid.set(pn, id);
+    }
+  }
+
+  unificarConversasPorMapeamentosConhecidos("contatos-salvos-wpp");
+  const atualizadas = aplicarNomesConhecidosNasConversas();
+  salvarContatosSalvos();
+  salvarConversas();
+  salvarMapeamentos();
+  enviarConversas();
+
+  console.log(
+    `[CONTATOS SALVOS] WPP_AUTORITATIVO | recebidos=${lista.length} | ` +
+      `aliases=${contatosSalvos.size} | conversasAtualizadas=${atualizadas}`,
+  );
+
+  return { ok: true, contatos: lista.length, atualizadas };
 }
 
 function listarContatosSalvos() {
@@ -1528,11 +1670,10 @@ function mesclarConversas(origemId, destinoId) {
 
   const destino = obterConversa(destinoId);
 
-  if (
-    pareceNomeUtil(origem.nome, origemId) &&
-    !pareceNomeUtil(destino.nome, destinoId)
-  ) {
+  if (ehGrupo(destinoId) && pareceNomeUtil(origem.nome, origemId)) {
     destino.nome = origem.nome;
+  } else if (!ehGrupo(destinoId)) {
+    destino.nome = nomePreferidoConversa(destinoId);
   }
 
   transferirEstadoArquivado(origemId, destinoId);
@@ -2246,14 +2387,18 @@ async function atualizarChat(chat, fonte = "historico") {
 
   const conversa = obterConversa(resolvido);
 
-  const nome =
-    chat.name ||
-    chat.displayName ||
-    chat.subject ||
-    contatos.get(resolvido)?.nome ||
-    contatos.get(id)?.nome;
+  if (ehGrupo(resolvido)) {
+    const nome =
+      chat.subject ||
+      chat.name ||
+      chat.displayName ||
+      contatos.get(resolvido)?.nome ||
+      contatos.get(id)?.nome;
 
-  if (pareceNomeUtil(nome, resolvido)) conversa.nome = nome;
+    if (pareceNomeUtil(nome, resolvido)) conversa.nome = nome;
+  } else {
+    conversa.nome = nomePreferidoConversa(resolvido);
+  }
 
   if (chat.unreadCount !== null && chat.unreadCount !== undefined) {
     atualizarEstadoNaoLidasWhatsapp(
@@ -2549,16 +2694,6 @@ async function adicionarMensagem(mensagem, emitir = false, extras = {}) {
     }
 
     const timestamp = numeroTimestamp(mensagem.messageTimestamp);
-
-    if (
-      mensagem.pushName &&
-      !mensagem.key.fromMe &&
-      !ehGrupo(id) &&
-      !pareceNomeUtil(conversa.nome, id)
-    ) {
-      conversa.nome = mensagem.pushName;
-      definirNomeContato(id, mensagem.pushName);
-    }
 
     const item = {
       idMensagem,
@@ -5204,7 +5339,9 @@ function importarHistoricoNormalizadoWpp(dados = {}) {
 
     const conversa = obterConversa(id);
 
-    if (
+    if (!ehGrupo(id)) {
+      conversa.nome = nomePreferidoConversa(id);
+    } else if (
       recebida?.nome &&
       pareceNomeUtil(recebida.nome, id) &&
       !pareceNomeUtil(conversa.nome, id)
@@ -5245,6 +5382,18 @@ function importarHistoricoNormalizadoWpp(dados = {}) {
       preencher("viewOnceKind", recebida.viewOnceKind);
       preencher("participant", recebida.participant);
       preencher("remoteJid", recebida.remoteJid);
+      if (Array.isArray(recebida.reacoes)) {
+        const reacoes = recebida.reacoes.map((item) => ({
+          emoji: String(item?.emoji || "").trim(),
+          total: Math.max(0, Number(item?.total || 0) || 0),
+          minha: !!item?.minha,
+        })).filter((item) => item.emoji && item.total > 0);
+
+        if (JSON.stringify(existente.reacoes || []) !== JSON.stringify(reacoes)) {
+          existente.reacoes = reacoes;
+          mudou = true;
+        }
+      }
       if (recebida.tipo === 'imagem' && recebida.mediaPath && fs.existsSync(recebida.mediaPath) && fs.statSync(recebida.mediaPath).size > 0) {
         if (existente.mediaPath !== recebida.mediaPath) {
           existente.mediaPath = recebida.mediaPath;
@@ -5297,6 +5446,15 @@ function importarHistoricoNormalizadoWpp(dados = {}) {
       mediaPath: recebida.tipo === 'imagem' && recebida.mediaPath && fs.existsSync(recebida.mediaPath) ? recebida.mediaPath : null,
       mediaUrl: recebida.tipo === 'imagem' && recebida.mediaPath && fs.existsSync(recebida.mediaPath) ? pathToFileURL(recebida.mediaPath).href : null,
       rawBase64: null,
+      ...(Array.isArray(recebida?.reacoes)
+        ? {
+            reacoes: recebida.reacoes.map((item) => ({
+              emoji: String(item?.emoji || "").trim(),
+              total: Math.max(0, Number(item?.total || 0) || 0),
+              minha: !!item?.minha,
+            })).filter((item) => item.emoji && item.total > 0),
+          }
+        : {}),
     });
 
     conversa.mensagens.sort(
@@ -5337,6 +5495,13 @@ function importarHistoricoNormalizadoWpp(dados = {}) {
 
 async function responderSolicitacao(id, acao, dados) {
   try {
+    if (acao === "sincronizar-contatos-salvos-wpp") {
+      const resultado = sincronizarContatosSalvosWpp(dados || {});
+
+      parentPort.postMessage({ tipo: "resposta", id, resultado });
+      return;
+    }
+
     if (acao === "importar-historico-wpp") {
       const resultado = importarHistoricoNormalizadoWpp(dados || {});
 
@@ -5691,6 +5856,7 @@ async function iniciarServico() {
   // Ordem importante: o estado de arquivamento precisa existir
   // antes de reconstruirmos as conversas do cache.
   carregarMapeamentos();
+  carregarContatosSalvos();
   carregarArquivadas();
   carregarConversasLocais();
   carregarCacheMensagensRetry();

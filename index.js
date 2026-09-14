@@ -88,6 +88,7 @@ let atualizadorConfigurado = false;
 let historicoGapWppExecutado = false;
 let historicoGapWppEmAndamento = false;
 let timerHistoricoGapWpp = null;
+let sincronizacaoContatosSalvosEmAndamento = null;
 
 // Presenca: Baileys e a fonte primaria por ser disponibilizada mais cedo.
 // O WPPConnect fica assinado em segundo plano e so assume quando o Baileys
@@ -1608,6 +1609,7 @@ function registrarWorker(worker, tipoWorker) {
           });
 
           imprimirResumoDiagnosticoInicializacao();
+          void sincronizarContatosSalvosAutoritativos();
           agendarSincronizacaoHistoricoGapWpp(350);
 
           console.log(
@@ -2104,6 +2106,54 @@ function agendarSincronizacaoHistoricoGapWpp(atraso = 700) {
     },
     Math.max(0, Number(atraso) || 0),
   );
+}
+
+function sincronizarContatosSalvosAutoritativos() {
+  if (
+    sincronizacaoContatosSalvosEmAndamento ||
+    !wppFullReady ||
+    !archiveWorker ||
+    !whatsappWorker
+  ) {
+    return sincronizacaoContatosSalvosEmAndamento;
+  }
+
+  sincronizacaoContatosSalvosEmAndamento = (async () => {
+    const resultadoWpp = await solicitarAoWorker(
+      "wpp",
+      "listar-contatos-salvos",
+      {},
+      25000,
+    );
+
+    if (!resultadoWpp?.ok || resultadoWpp?.autoridadeDisponivel !== true) {
+      console.warn(
+        `[CONTATOS SALVOS] WPP_INDISPONIVEL | fonte=${resultadoWpp?.fonte || "nenhuma"}`,
+      );
+      return { ok: false };
+    }
+
+    const contatos = Array.isArray(resultadoWpp?.contatos)
+      ? resultadoWpp.contatos
+      : [];
+    const resultadoBaileys = await solicitarAoWorker(
+      "baileys",
+      "sincronizar-contatos-salvos-wpp",
+      { contatos },
+      25000,
+    );
+
+    console.log(
+      `[CONTATOS SALVOS] SINCRONIZADOS | contatos=${contatos.length} | ` +
+        `conversasAtualizadas=${Number(resultadoBaileys?.atualizadas || 0) || 0}`,
+    );
+
+    return resultadoBaileys;
+  })().finally(() => {
+    sincronizacaoContatosSalvosEmAndamento = null;
+  });
+
+  return sincronizacaoContatosSalvosEmAndamento;
 }
 
 async function sincronizarHistoricoGapWpp() {
@@ -8946,9 +8996,15 @@ ipcMain.handle('sincronizar-conversa-recente', async (_, dados = {}) => {
   if (historicosRecentesEmAndamento.has(chave)) return historicosRecentesEmAndamento.get(chave);
   const trabalho = (async () => {
     let total = 0;
-    const conhecidos = new Set((conversasBase.find(c => chaveCanonica(c.id) === chave)?.mensagens || []).map(m => m.idMensagem));
+    const conversaLocal = conversasBase.find(c => chaveCanonica(c.id) === chave);
+    const mensagensConhecidas = conversaLocal?.mensagens || [];
+    const conhecidos = new Set(mensagensConhecidas.map(m => m.idMensagem));
+    const idsComReacao = mensagensConhecidas
+      .filter((mensagem) => Array.isArray(mensagem?.reacoes) && mensagem.reacoes.length)
+      .map((mensagem) => String(mensagem.idMensagem || "").trim())
+      .filter(Boolean);
     for (const limite of [200, 600]) {
-      const resultado = await solicitarAoWorker('wpp', 'buscar-historico-recente-conversa', { conversaId, limite }, 35000);
+      const resultado = await solicitarAoWorker('wpp', 'buscar-historico-recente-conversa', { conversaId, limite, idsComReacao }, 35000);
       if (!resultado?.ok) return resultado;
       const lista = resultado.mensagens || [];
       for (let i = 0; i < lista.length; i += 200) {

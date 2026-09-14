@@ -147,6 +147,8 @@ async function responderSolicitacao(id, acao, dados) {
         resultado: {
           ok: true,
           contatos,
+          autoridadeDisponivel: ultimaFonteContatosSalvosWpp !== "nenhuma",
+          fonte: ultimaFonteContatosSalvosWpp,
         },
       });
 

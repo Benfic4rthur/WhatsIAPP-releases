@@ -28,6 +28,7 @@ function mainHarness() {
     enviarParaTela: (evento, dados) => eventos.push({ evento, dados }),
     registrarMarcoInicializacao: noop, imprimirResumoDiagnosticoInicializacao: noop,
     agendarSincronizacaoHistoricoGapWpp: noop, enviarCatalogoAoWpp: noop,
+    sincronizarContatosSalvosAutoritativos: noop,
     liberarFallbacksBaileysImediatamente: noop,
     setTimeout: noop, clearTimeout: noop,
     formatarTempoDiagnostico: String, tempoMonotonicoMs: () => 0,

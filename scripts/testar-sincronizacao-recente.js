@@ -22,10 +22,12 @@ async function testarSincronizacaoRecente() {
 
   const contexto = {console:{log(){},warn(){}},client:{getMessages:async()=>[]},fullReady:true,prontidaoInicialFinalizada:true,
     normalizarId:v=>v,chaveCanonica:v=>v,candidatosOperacaoConversaWpp:async()=>({candidatos:['c']}),
-    aguardarComTimeoutWpp:async p=>p,timestampMensagemWpp:v=>Number(v)||0};
+    aguardarComTimeoutWpp:async p=>p,timestampMensagemWpp:v=>Number(v)||0,
+    serializarId:v=>typeof v==='string'?v:v?.id||null,
+    normalizarReacoesWpp:r=>(r?.reactions||[]).map(x=>({emoji:x.aggregateEmoji,total:x.senders.length,minha:!!x.hasReactionByMe}))};
   vm.createContext(contexto);vm.runInContext(fs.readFileSync(path.join(__dirname,'../wpp-worker-modules/historico-gap.js'),'utf8'),contexto);
   contexto.estadosAtuaisHistoricoGapWpp=async()=>[{id:'c',aliases:[],timestamp:105}];
-  contexto.normalizarMensagemHistoricoGapWpp=m=>({id:'c',idMensagem:m.id,timestamp:m.timestamp});
+  contexto.normalizarMensagemHistoricoGapWpp=m=>({id:'c',idMensagem:m.id,idMensagemWpp:m.id,timestamp:m.timestamp});
   let r=await contexto.buscarHistoricoGapWpp({conversas:[{id:'c',timestamp:100}]});
   assert.equal(r.processados.length,0);assert.equal(r.resumo.falhas,1);
   contexto.client.getMessages=async()=>[{id:'antes',timestamp:90},{id:'nova',timestamp:105}];
@@ -33,7 +35,10 @@ async function testarSincronizacaoRecente() {
   assert.equal(r.processados.length,1);assert.equal(r.mensagens.length,2);
   contexto.client.getMessages=async()=>[{id:'incompleta',timestamp:99}];
   r=await contexto.buscarHistoricoGapWpp({conversas:[{id:'c',timestamp:100}]});assert.equal(r.processados.length,0);
+  contexto.client.getMessages=async()=>[{id:'com-reacao',timestamp:106,hasReaction:true}];
+  contexto.client.getReactions=async id=>({reactions:id==='com-reacao'?[{aggregateEmoji:'😂',hasReactionByMe:false,senders:[{}]}]:[]});
   r=await contexto.buscarHistoricoRecenteConversaWpp({conversaId:'c'});assert.equal(r.ok,true);
+  assert.deepEqual(JSON.parse(JSON.stringify(r.mensagens[0].reacoes)),[{emoji:'😂',total:1,minha:false}]);
   contexto.fullReady=false;r=await contexto.buscarHistoricoRecenteConversaWpp({conversaId:'c'});assert.equal(r.aguardandoConexao,true);
 
   const eventos={},texto={},botao={addEventListener(){}},barra={querySelector:s=>s==='span'?texto:botao,classList:{toggle(){}}};
@@ -47,7 +52,7 @@ async function testarSincronizacaoRecente() {
   resolverB({ok:false,erro:'Erro simulado'});await b;assert.equal(texto.textContent,'Erro simulado');assert.equal(botao.disabled,false);
   assert.equal(classesCorpo.has('whatsiapp-sync-conversa-visivel'),true);
   atual=null;ui.mostrar();assert.equal(barra.hidden,true);assert.equal(classesCorpo.has('whatsiapp-sync-conversa-visivel'),false);
-  return {ok:true,midia:'PASS',historico:'PASS',indicador:'PASS'};
+  return {ok:true,midia:'PASS',historico:'PASS',reacoesOffline:'PASS',indicador:'PASS'};
 }
 module.exports={testarSincronizacaoRecente};
 if(require.main===module)testarSincronizacaoRecente().then(r=>console.log(r)).catch(e=>{console.error(e);process.exitCode=1;});
