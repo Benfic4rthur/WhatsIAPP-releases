@@ -50,7 +50,7 @@ function iniciarHelperLogout() {
   const helper = path.join(
     app.getAppPath(),
     "scripts",
-    "logout-whatsapp-helper-v2.js",
+    "logout-whatsapp-helper-v4.js",
   );
 
   if (!fs.existsSync(helper)) {
