@@ -253,4 +253,4 @@
     .catch(() => {});
 })();
 
-require("./ajustes-conversa-sessao.js");
+require("./renderer-modules/ajustes-conversa-sessao.js");
