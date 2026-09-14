@@ -22,6 +22,22 @@ let codigoWpp = MODULOS_WPP.map((arquivo) =>
   fs.readFileSync(path.join(diretorioModulos, arquivo), "utf8"),
 ).join("");
 
+// Em sessao desvinculada, waitForLogin=false pode devolver o cliente antes de
+// o fluxo de autenticacao registrar/emitir o QR pelo catchQR. Isso deixa o app
+// com apenas o QR do Baileys e o WPPConnect parado em stream mode QR.
+// Forcamos a espera de login no worker empacotado para garantir que o segundo
+// QR seja entregue antes de o WPPConnect seguir para a sincronizacao normal.
+const marcadorWaitForLogin = /waitForLogin\s*:\s*false\s*,/;
+
+if (!marcadorWaitForLogin.test(codigoWpp)) {
+  throw new Error("Nao foi possivel instalar o ajuste de QR do WPPConnect.");
+}
+
+codigoWpp = codigoWpp.replace(
+  marcadorWaitForLogin,
+  'waitForLogin: true,',
+);
+
 // Aceita tanto LF quanto CRLF. No build Windows os arquivos podem chegar com
 // \r\n, enquanto o wrapper anterior procurava apenas \n e abortava o worker.
 const marcador =
