@@ -1,13 +1,14 @@
 {
   "name": "whatsiapp",
-  "version": "1.0.24",
+  "version": "1.0.25",
   "main": "main-updater.js",
   "scripts": {
-    "test": "node --check main-updater.js && node --check sessao-whatsapp.js && node --check desktop-updater.js && node --check updater-core.js && node --check index.js && node --check whatsapp-worker.js && node --check whatsapp-worker-live-wrapper.js && node --check wpp-worker.js && node --check wpp-worker-live-wrapper.js && node --check renderer-modules/versao-app.js && node --check renderer-modules/ajustes-conversa-sessao.js && node --check renderer-modules/anexos.js && node --check renderer-modules/audio.js && node --check renderer-modules/eventos-whatsapp.js && node --check renderer-modules/lista-conversas.js && node --check renderer-modules/renderizacao-mensagens.js && node --check renderer-modules/compositor-mensagens.js && node --check scripts/logout-whatsapp-cleanup.js && node scripts/testar-autenticacao.js && node scripts/testar-updater.js && node scripts/testar-status-entrega.js && node scripts/testar-midias.js && node scripts/testar-cartoes.js && node scripts/testar-sincronizacao-recente.js && node scripts/testar-nomes-contatos.js",
+    "test": "node --check main-updater.js && node --check sessao-whatsapp.js && node --check desktop-updater.js && node --check updater-core.js && node --check index.js && node --check whatsapp-worker.js && node --check whatsapp-worker-live-wrapper.js && node --check wpp-worker.js && node --check wpp-worker-live-wrapper.js && node --check renderer-modules/versao-app.js && node --check renderer-modules/ajustes-conversa-sessao.js && node --check renderer-modules/anexos.js && node --check renderer-modules/audio.js && node --check renderer-modules/eventos-whatsapp.js && node --check renderer-modules/lista-conversas.js && node --check renderer-modules/renderizacao-mensagens.js && node --check renderer-modules/compositor-mensagens.js && node --check scripts/logout-whatsapp-cleanup.js && node scripts/testar-autenticacao.js && node scripts/testar-updater.js && node scripts/testar-status-entrega.js && node scripts/testar-midias.js && node scripts/testar-cartoes.js && node scripts/testar-sincronizacao-recente.js && node scripts/testar-nomes-contatos.js && node scripts/testar-icone-windows.js",
     "start": "electron .",
     "doctor": "node scripts/diagnostico-ambiente.js",
     "clean:dist": "node scripts/limpar-dist-local.js",
     "prepare:icon": "node scripts/preparar-icone-macos.js assets/logo.png assets/logo-macos.png",
+    "prepare:icon:win": "node scripts/preparar-icone-windows.js assets/logo-macos.png assets/logo-taskbar.ico",
     "prepare:chrome": "node scripts/preparar-chrome-empacotado.js",
     "dist:mac": "npm run clean:dist && npm run prepare:icon && npm run prepare:chrome && electron-builder --mac --publish never",
     "dist:win": "node scripts/gerar-windows.js",
@@ -71,7 +72,7 @@
       "!**/.env*"
     ],
     "win": {
-      "icon": "assets/logo.png",
+      "icon": "assets/logo-taskbar.ico",
       "artifactName": "WhatsIAPP-Setup-${version}-${arch}.${ext}",
       "target": [
         {

@@ -17,6 +17,7 @@ async function main() {
   validarExecutavelWindows(ffmpeg);
   validarExecutavelWindows(require('electron'));
   run(ffmpeg, ['-version']);
+  run(process.execPath, ['scripts/preparar-icone-windows.js', 'assets/logo-macos.png', 'assets/logo-taskbar.ico']);
   run(process.execPath, ['scripts/preparar-chrome-empacotado.js']);
   run(process.execPath, ['scripts/testar-empacotamento-windows.js']);
   // Pasta isolada: nao apague os DMGs existentes nem publique nesta etapa.
