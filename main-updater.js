@@ -7,6 +7,26 @@ const pacote = require("./package.json");
 const { criarDesktopUpdater } = require("./desktop-updater");
 const { registrarSessaoWhatsAppIpc } = require("./sessao-whatsapp");
 
+// Exibe a versao atual no titulo da janela principal sem hardcode.
+// Mantem o titulo mesmo se o HTML tentar substitui-lo depois de carregar.
+app.on("browser-window-created", (_evento, janela) => {
+  try {
+    if (janela.getTitle() !== "WhatsIAPP") return;
+
+    const titulo = `WhatsIAPP • v${app.getVersion()}`;
+    janela.setTitle(titulo);
+
+    janela.webContents.on("page-title-updated", (evento) => {
+      evento.preventDefault();
+      if (!janela.isDestroyed()) janela.setTitle(titulo);
+    });
+  } catch (erro) {
+    console.warn(
+      `[WINDOW TITLE] UPDATE_FAILED | error=${erro?.message || erro}`,
+    );
+  }
+});
+
 // Roteia os dois workers por wrappers pequenos que adicionam logout remoto
 // usando as sessoes que ja estao autenticadas e ativas. Isso evita recriar
 // sessoes depois que o app fecha, quando credenciais locais podem mudar de
