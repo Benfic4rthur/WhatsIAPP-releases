@@ -80,6 +80,35 @@ function erroNavegacaoWpp(erro) {
   );
 }
 
+function erroInjecaoWpp(erro) {
+  const texto = String(erro?.message || erro || "").toLowerCase();
+  return (
+    texto.includes("wpp is not defined") ||
+    texto.includes("wapi is not defined") ||
+    texto.includes("cannot read properties of undefined")
+  );
+}
+
+function erroTemporarioWpp(erro) {
+  return erroNavegacaoWpp(erro) || erroInjecaoWpp(erro);
+}
+
+async function aguardarWppInjetado(client, timeoutMs = 60000) {
+  if (!client?.page || typeof client.page.waitForFunction !== "function") {
+    throw new Error("WPPConnect page unavailable");
+  }
+
+  await client.page.waitForFunction(
+    () =>
+      typeof window.WPP !== "undefined" &&
+      typeof window.WPP?.conn?.isAuthenticated === "function" &&
+      typeof window.WPP?.conn?.logout === "function",
+    { timeout: timeoutMs, polling: 250 },
+  );
+
+  log("[SESSION LOGOUT] WPPCONNECT_WPP_READY");
+}
+
 function statusDesconexaoBaileys(erro) {
   return Number(
     erro?.output?.statusCode ??
@@ -195,8 +224,8 @@ async function consultarAutenticacaoWpp(client, tentativas = 1) {
       return { ok: true, autenticada: !!(await client.isAuthenticated()) };
     } catch (erro) {
       ultimoErro = erro;
-      if (!erroNavegacaoWpp(erro)) throw erro;
-      log(`[SESSION LOGOUT] WPPCONNECT_NAVIGATION_RETRY | step=auth | try=${i + 1}`);
+      if (!erroTemporarioWpp(erro)) throw erro;
+      log(`[SESSION LOGOUT] WPPCONNECT_RETRY | step=auth | try=${i + 1} | error=${erro?.message || erro}`);
       await esperar(800);
     }
   }
@@ -216,7 +245,7 @@ async function confirmarLogoutWpp(client, estado) {
       const autenticada = !!(await client.isAuthenticated());
       if (!autenticada) return true;
     } catch (erro) {
-      if (!erroNavegacaoWpp(erro)) throw erro;
+      if (!erroTemporarioWpp(erro)) throw erro;
     }
     await esperar(750);
   }
@@ -279,12 +308,20 @@ async function logoutWppConnect() {
 
     let autenticada = false;
     const inicio = Date.now();
-    while (Date.now() - inicio < 45000) {
+    while (Date.now() - inicio < 60000) {
       if (
         estado.qrGerado ||
         ["notlogged", "disconnectedmobile", "deletetoken"].includes(estado.status)
       ) {
         break;
+      }
+
+      try {
+        await aguardarWppInjetado(client, 8000);
+      } catch (erro) {
+        if (!erroTemporarioWpp(erro) && !String(erro?.message || erro).includes("Waiting failed")) {
+          log(`[SESSION LOGOUT] WPPCONNECT_WPP_WAIT | error=${erro?.message || erro}`);
+        }
       }
 
       const consulta = await consultarAutenticacaoWpp(client, 1);
@@ -304,25 +341,23 @@ async function logoutWppConnect() {
       }
       log(`[SESSION LOGOUT] WPPCONNECT_ALREADY_UNLINKED | status=${estado.status || "qr"}`);
     } else {
-      // WPPConnect costuma navegar imediatamente depois do logout. Nessa troca
-      // de pagina o Puppeteer pode destruir o execution context mesmo quando o
-      // WhatsApp ja aceitou a revogacao. Por isso confirmamos o estado depois.
-      await esperar(1000);
+      await esperar(800);
       let logoutConfirmado = false;
       let ultimoErro = null;
 
-      for (let tentativa = 1; tentativa <= 3 && !logoutConfirmado; tentativa++) {
+      for (let tentativa = 1; tentativa <= 4 && !logoutConfirmado; tentativa++) {
         try {
+          await aguardarWppInjetado(client, 30000);
           await comTimeout(client.logout(), 20000, "WPPConnect logout timeout");
           logoutConfirmado = true;
           log(`[SESSION LOGOUT] WPPCONNECT_LOGOUT_CALL_OK | try=${tentativa}`);
         } catch (erro) {
           ultimoErro = erro;
-          if (!erroNavegacaoWpp(erro)) throw erro;
-          log(`[SESSION LOGOUT] WPPCONNECT_NAVIGATION_DURING_LOGOUT | try=${tentativa}`);
-          await esperar(900);
+          if (!erroTemporarioWpp(erro)) throw erro;
+          log(`[SESSION LOGOUT] WPPCONNECT_RETRY | step=logout | try=${tentativa} | error=${erro?.message || erro}`);
+          await esperar(1200);
           logoutConfirmado = await confirmarLogoutWpp(client, estado);
-          if (!logoutConfirmado) await esperar(900);
+          if (!logoutConfirmado) await esperar(1000);
         }
       }
 
@@ -330,9 +365,7 @@ async function logoutWppConnect() {
         throw ultimoErro || new Error("WPPConnect logout not confirmed");
       }
 
-      // Mesmo se logout() resolveu normalmente, esperamos a navegacao concluir
-      // para nao fechar o Chromium antes de o servidor registrar a sessao.
-      await esperar(1200);
+      await esperar(1500);
       log("[SESSION LOGOUT] WPPCONNECT_REMOTE_LOGOUT_OK");
     }
 
@@ -400,7 +433,7 @@ async function main() {
     return;
   }
 
-  log(`[SESSION LOGOUT] START_V2 | parent=${PARENT_PID}`);
+  log(`[SESSION LOGOUT] START_V3 | parent=${PARENT_PID}`);
   try {
     await aguardarAplicacaoFechar();
   } catch (erro) {
@@ -427,13 +460,13 @@ async function main() {
   };
 
   gravarResultado(resultado);
-  log(`[SESSION LOGOUT] FINISH_V2 | ok=${resultado.ok} | baileys=${!!baileys?.ok} | wpp=${!!wpp?.ok}`);
+  log(`[SESSION LOGOUT] FINISH_V3 | ok=${resultado.ok} | baileys=${!!baileys?.ok} | wpp=${!!wpp?.ok}`);
   await esperar(700);
   relancarAplicacao();
 }
 
 main().catch((erro) => {
-  log(`[SESSION LOGOUT] FATAL_V2 | error=${erro?.stack || erro?.message || erro}`);
+  log(`[SESSION LOGOUT] FATAL_V3 | error=${erro?.stack || erro?.message || erro}`);
   gravarResultado({
     ok: false,
     concluidoEm: new Date().toISOString(),
